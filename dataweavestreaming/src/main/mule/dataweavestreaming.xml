@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+	<file:config name="File_Config4" doc:name="File Config" doc:id="fa9d2f14-f412-423a-867a-a6c52ccc60ab" >
+	</file:config>
+	<file:config name="File_Config1" doc:name="File Config" doc:id="de42da98-899e-4f11-86d1-048780836ed8" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ec73c665-159e-4ebc-b286-ff92e465d1bb" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config2" doc:name="File Config" doc:id="5c5ae55b-0a68-4aca-9954-aaeb0bb1d8ce" />
+	<file:config name="File_Config" doc:name="File Config" doc:id="c7293327-5fc7-410f-901c-30c9928d0e1e" />
+	<file:config name="File_Config3" doc:name="File Config" doc:id="2ff54473-ff7e-4725-bb93-bef4db93f9a0" />
+	<flow name="dataweavestreamingFlow" doc:id="f00e65f3-e141-4acd-b00e-099fe0672c9c" >
+		<file:listener doc:name="On New or Updated File" doc:id="37340778-cd4e-4946-a664-0cc4bd543f1e" directory="C:\files\data" timeBetweenSizeCheckUnit="MILLISECONDS" autoDelete="true" moveToDirectory="C:\files\dev" outputMimeType="application/csv; streaming=true" config-ref="File_Config1">
+			<reconnect />
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Logger" doc:id="06e8ebc9-b3a0-42c6-8338-6c7504cca60f" message="#[now()]"/>
+		<ee:transform doc:name="Transform Message" doc:id="86a538bf-4087-4e8f-a389-7059426497af" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json deferred=true
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="ef758a3c-8883-4fac-bd1a-9e75a9e8ae89" config-ref="File_Config4" path="C:\files\sampledata\samplerecords.json"/>
+		<logger level="INFO" doc:name="Logger" doc:id="d4947b00-eb84-4882-a642-638e3a0f72f1" message="#[now()]"/>
+	</flow>
+	<flow name="dataweavewithoutstreamingFlow" doc:id="4d554670-4079-4a4b-b7e2-cec29347b462" >
+		<file:listener doc:name="On New or Updated File" doc:id="8e3613cc-afff-4a0e-9989-15d889213a48" config-ref="File_Config4" directory="C:\files_withoutStreaming\data" autoDelete="true" moveToDirectory="C:\files_withoutStreaming\dev">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="InputCSVdata" doc:id="e7fe9558-8d59-4bb4-88fb-49f93f711dfc" message="#[now()]"/>
+		<ee:transform doc:name="Transform Message" doc:id="92a3bf96-b93c-470d-bfa5-5c278c2e7f90" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Write" doc:id="4b915642-5645-465f-bd82-87178f5823f8" config-ref="File_Config3" path="C:\files_withoutStreaming\sampleData\sample.json"/>
+		<logger level="INFO" doc:name="outputDataInJson" doc:id="fe214947-c39a-4721-9863-b8b784642ec8" message="#[now()]"/>
+	</flow>
+	<flow name="dataweavestreamingFlowwithListerner" doc:id="c8dca695-62c9-484a-b161-bc3bc405e4be" >
+		<http:listener doc:name="Listener" doc:id="5f67beac-9834-40ea-922a-2b56c01a82e1" config-ref="HTTP_Listener_config" path="/listerner" outputMimeType="application/json; streaming=true"/>
+		<ee:transform doc:name="Transform Message" doc:id="1f6fa163-9b5d-4440-9cbf-9532aad4bd26" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+@StreamCapable()
+input payload application/json
+output application/csv deferred=true
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<file:write doc:name="Writetocsv" doc:id="e777b5e9-766e-4125-a4f6-dfb35883b24f" config-ref="File_Config4" path="C:\files\streaming_xml\samplerecords.csv"/>
+	</flow>
+	<flow name="dataweavestreamingFlow1" doc:id="3dfa5ab5-0a58-437c-a77e-43557b97b042" >
+		<http:listener doc:name="Listener" doc:id="e124f83f-cc21-45a6-b14d-4bdd7ed0292f" config-ref="HTTP_Listener_config" path="/test"/>
+		<ee:transform doc:name="Transform Message" doc:id="1ce2f997-b5cd-4ffc-8c27-69be53da3f41" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+
+log("current time",now())]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="external-jar" doc:id="e09b8d77-ee16-408f-beb1-ec7ab7c3b12f" >
+		<http:listener doc:name="Listener-external-jar" doc:id="0892a1db-b65c-4c29-aceb-39ec92f6a8eb" config-ref="HTTP_Listener_config" path="/jar"/>
+		<ee:transform doc:name="Transform Message" doc:id="b8407d2a-4d6e-4ecc-8e36-78981212c364" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+import java!org::apache::commons::lang3::StringUtils
+output application/json
+---
+{
+    a: StringUtils::substring("MYSTRING",1,6)
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweavexmlwithnamespace" doc:id="65d014c1-19c3-4758-9c70-8303b082fcd7" >
+		<http:listener doc:name="xmlwithnamespace" doc:id="ff036771-ff84-49c1-8223-47aeacbd961e" config-ref="HTTP_Listener_config" path="/namespace"/>
+		<ee:transform doc:name="Transform Message" doc:id="800c8343-8525-4734-86c6-018f584c2b47" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+ns org http://www.mycompany.org/employees
+---
+payload.org#employees.*org#employee map {
+  fullname : $.org#name.org#firstname ++ " " ++ $.org#name.org#lastname,
+  age: $.org#name.@age,
+  hiredate : $.org#hiredate,
+  product : $.org#projects.org#project.org#product
+}
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+	<flow name="dataweaveswithoutnamespace" doc:id="4658228e-8151-4edb-8354-21b77b52f5fa" >
+		<http:listener doc:name="Listener" doc:id="1bf47cfc-8e2e-4848-b947-63b4a39c8447" config-ref="HTTP_Listener_config" path="/withoutnamespace"/>
+		<ee:transform doc:name="Transform Message" doc:id="ab2d67f6-aefa-4b21-a68d-2881cf260998" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload.employees.*employee map {
+  fullname : $.name.firstname ++ " " ++ $.name.lastname,
+  age: $.name.@age,
+  hiredate : $.hiredate,
+  product : $.projects.project.product
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
