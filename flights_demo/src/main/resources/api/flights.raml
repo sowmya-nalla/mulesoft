@@ -1,0 +1,14 @@
+#%RAML 1.0
+title: flights
+/flight/{flightNumber} :
+  uriParameters:
+    flightNumber:
+      type: number
+      example: 12345
+  get:
+    queryParameters:
+      destination:
+        type: string
+       
+  
+      
