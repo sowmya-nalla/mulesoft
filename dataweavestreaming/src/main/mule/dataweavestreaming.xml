@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<mule xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
-	xmlns:file="http://www.mulesoft.org/schema/mule/file"
-	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+<mule xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
 http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
 http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
-http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd">
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd">
 	<file:config name="File_Config4" doc:name="File Config" doc:id="fa9d2f14-f412-423a-867a-a6c52ccc60ab" >
 	</file:config>
 	<file:config name="File_Config1" doc:name="File Config" doc:id="de42da98-899e-4f11-86d1-048780836ed8" />
@@ -15,6 +16,9 @@ http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/htt
 	<file:config name="File_Config2" doc:name="File Config" doc:id="5c5ae55b-0a68-4aca-9954-aaeb0bb1d8ce" />
 	<file:config name="File_Config" doc:name="File Config" doc:id="c7293327-5fc7-410f-901c-30c9928d0e1e" />
 	<file:config name="File_Config3" doc:name="File Config" doc:id="2ff54473-ff7e-4725-bb93-bef4db93f9a0" />
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="b4e2e442-c774-47cf-83e0-bfce29ae557f" >
+		<salesforce:basic-connection username="sowmya0689@gmail.com" password="darshil@03" securityToken="Xh4h7J2h3J3hvkSsaSo9ZnQ5h" />
+	</salesforce:sfdc-config>
 	<flow name="dataweavestreamingFlow" doc:id="f00e65f3-e141-4acd-b00e-099fe0672c9c" >
 		<file:listener doc:name="On New or Updated File" doc:id="37340778-cd4e-4946-a664-0cc4bd543f1e" directory="C:\files\data" timeBetweenSizeCheckUnit="MILLISECONDS" autoDelete="true" moveToDirectory="C:\files\dev" outputMimeType="application/csv; streaming=true" config-ref="File_Config1">
 			<reconnect />
@@ -33,6 +37,18 @@ payload]]></ee:set-payload>
 		</ee:transform>
 		<file:write doc:name="Write" doc:id="ef758a3c-8883-4fac-bd1a-9e75a9e8ae89" config-ref="File_Config4" path="C:\files\sampledata\samplerecords.json"/>
 		<logger level="INFO" doc:name="Logger" doc:id="d4947b00-eb84-4882-a642-638e3a0f72f1" message="#[now()]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="10651121-8f8b-4ee5-9b47-dfe092d934a7" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="d0de50b6-4b7c-4c35-bdff-391e0adc797a" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-propagate>
+		</error-handler>
 	</flow>
 	<flow name="dataweavewithoutstreamingFlow" doc:id="4d554670-4079-4a4b-b7e2-cec29347b462" >
 		<file:listener doc:name="On New or Updated File" doc:id="8e3613cc-afff-4a0e-9989-15d889213a48" config-ref="File_Config4" directory="C:\files_withoutStreaming\data" autoDelete="true" moveToDirectory="C:\files_withoutStreaming\dev">
@@ -126,5 +142,52 @@ payload.employees.*employee map {
 }]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
+	</flow>
+	<flow name="createsalesforceaccountflow" doc:id="9ec8c939-acac-41a6-91b6-2fbb359064e7" >
+		<http:listener doc:name="/createAccount" doc:id="1e553519-443b-4e63-a17c-1af6a0b6f654" config-ref="HTTP_Listener_config" path="/createAccount"/>
+		<ee:transform doc:name="Transform Message" doc:id="170b921c-5e83-4688-adc0-3cdf19b0f45d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+[{
+	name:"muleTestAccount",
+	AccountNumber:"12345566",
+	Phone:"12344556666",
+	billingcity: "Hyderabad"
+	
+	
+}]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<salesforce:create doc:name="Create" doc:id="79892b00-8487-47f8-9d4f-7b417e8a6073" config-ref="Salesforce_Config" type="Account"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c13d9f91-5f77-4af6-86ac-921311f9711c" message="Account inserted into Salesforce"/>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e56925bb-4699-426f-b36e-caca6b0bb2cc" type="ANY">
+				<ee:transform doc:name="Transform Message" doc:id="0050c034-013c-44db-8d03-f70cb697fee6" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="retriverecordsfromsalesforce" doc:id="6211e8b7-93f1-46dc-8489-3b239c3c8b7a" >
+		<http:listener doc:name="retriverecordsfromaccount" doc:id="bd5fb386-a690-4511-8d37-abb3b8ef67c2" config-ref="HTTP_Listener_config" path="/getRecords"/>
+		<salesforce:query-all doc:name="Query all" doc:id="a8074633-65a1-433f-ab4c-a8bce5ee5806" config-ref="Salesforce_Config">
+			<salesforce:salesforce-query ><![CDATA[select AccountNumber,Industry,phone,Rating from account]]></salesforce:salesforce-query>
+		</salesforce:query-all>
+		<ee:transform doc:name="Transform Message" doc:id="ac2f8113-d1c9-41a7-9ca1-68cb43c95ae3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="output payload" doc:id="2d41b3d4-9a99-4f20-98d7-93593dec71a1" message='"Accounts retrived fronm DB"'/>
 	</flow>
 </mule>
