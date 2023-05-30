@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="parallel-for-eachFlow" doc:id="d0cb0acd-bccc-4bb1-ad74-5f0fc13d2b7d" >
+		<http:listener doc:name="/foreach" doc:id="ae2740a2-09cd-4df6-b957-7f91642d4d33" config-ref="HTTP_Listener_config" path="/foreach"/>
+		<foreach doc:name="For Each" doc:id="d2dc1e31-c750-426c-ad19-d89f3128204e" >
+			<flow-ref doc:name="Flow Reference" doc:id="5f00f922-1122-4cd4-8b2a-cd4f646895c5" name="parallel-for-eachSub_Flow"/>
+		</foreach>
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="74916c3c-a789-4d74-ac63-1bc6d718e06e" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="4806eaa2-3d68-4d75-81e4-d72f3a23fd9d" message='#["error in for each flow"]'/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<sub-flow name="parallel-for-eachSub_Flow" doc:id="c4efb397-d734-46e2-8753-faaf5cfd35ac" >
+		<choice doc:name="Choice" doc:id="faea5401-fca3-49e6-9794-3040f21dc198" >
+			<when expression="#[payload.name=='sowmya']">
+				<raise-error doc:name="Raise error" doc:id="0f00e516-213d-455e-92c9-a268fe3f257a" type="CUSTOM:CUSTOM_ERROR"/>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform Message" doc:id="f92417cb-6eec-4f87-aea6-0d126a2a4585">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="26ddd6cd-0190-44c9-83bd-2089fa692166" message="#[payload]" />
+			</otherwise>
+		</choice>
+	</sub-flow>
+	<flow name="parallel-for-eachFlow1" doc:id="07ed2979-e666-45cc-ad17-23cf964efe77" >
+		<http:listener doc:name="Listener" doc:id="3bfdc76d-187e-4f66-b222-7f629723053b" config-ref="HTTP_Listener_config" path="/parallelforeach"/>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="4246a8e4-ebe6-4b25-9dba-ed4c4d73b1fe" >
+			<flow-ref doc:name="Flow Reference" doc:id="e1394326-d3d3-42d1-b2ac-1c116081d356" name="parallel-for-eachSub_Flow"/>
+		</parallel-foreach>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="ce01db90-cc71-4f55-b140-aa6cc4a04f7e" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="952d9586-92aa-4a60-b4ad-34e88089fd93" message='#["error in for-each flow"]'/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="parallel-for-eachFlow-with-choice" doc:id="c06646a4-7fa6-4e25-a090-58f400d2f7f0" >
+		<http:listener doc:name="Listener" doc:id="bde2c60c-cf0d-4ccd-86fd-050ffbe25132" config-ref="HTTP_Listener_config" path="/parallel"/>
+		<logger level="INFO" doc:name="Logger" doc:id="7c0ba84a-4e7f-43b9-b2dd-d1758fd60dc6" message='#["start logger "]'/>
+		<ee:transform doc:name="Transform Message" doc:id="9c273359-a074-4eaa-884f-9e743dac5d48" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+	{
+	"name":"sowmya",
+	"region":"India"
+},
+	{
+	"name":"raju",
+	"region":"USA"
+},
+	{
+	"name":"vihaan",
+	"region":"Italy"
+},
+
+]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<parallel-foreach doc:name="Parallel For Each" doc:id="d5bbe114-784c-4e00-8615-47a800dd7f59" >
+			<choice doc:name="Choice" doc:id="abe1fe7f-6e5d-4c82-9e49-ceb8103d2e5f" >
+				<when expression='#[payload.region=="India"]'>
+					<ee:transform doc:name="Transform Message" doc:id="f0e1b0c6-f011-4c3a-b44a-0b1db3ba9738" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"total salary in India":20000
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</when>
+				<when expression='#[payload.region=="USA"]'>
+					<ee:transform doc:name="Transform Message" doc:id="ed6453ec-26aa-4898-a8ac-d6ba20aff391" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"total salary in USA":200000
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</when>
+				<otherwise >
+					<ee:transform doc:name="Transform Message" doc:id="e4a348c0-4c01-4588-ba82-42bcfc545e24" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	"total salary in Italy":10000
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</otherwise>
+			</choice>
+		</parallel-foreach>
+		<ee:transform doc:name="Transform Message" doc:id="e6893dbc-9204-41ee-906b-e6dec54663b3" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="d3564f56-dd71-421c-938f-4c260accc3a2" message='#["End of for each parallel"]'/>
+	</flow>
+	<flow name="parallel-for-eachFlow2" doc:id="566603ca-5936-4479-93d4-b394aebe012b" >
+		<http:listener doc:name="/foreach" doc:id="b5450276-0ff3-4922-bead-2587434a9a07" config-ref="HTTP_Listener_config" path="/foreach"/>
+		<logger level="INFO" doc:name="Logger" doc:id="3a90b5bf-faeb-40ec-8a78-0b2d52cc439a" message='#["start looger"]'/>
+		<ee:transform doc:name="Transform Message" doc:id="39cdc0df-dfcf-4d19-85d3-a86c9d16bb90" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+[
+{
+"empId"	:"1",
+"name":"sowmya",
+"dept":"IT"
+},
+{
+"empId"	:"2",
+"name":"raju",
+"dept":"IT"
+},
+{
+"empId"	:"3",
+"name":"vihaan",
+"dept":"KG"
+},
+{
+"empId"	:"4",
+"name":"darshil",
+"dept":"4Th"
+},
+]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<foreach doc:name="For Each" doc:id="72c64895-c6ea-492a-827b-8bb10d2fdd13" batchSize="2">
+			<logger level="INFO" doc:name="Logger" doc:id="23232c04-bbb8-490b-81d9-9191deea2ecc" message="#[payload]"/>
+			<ee:transform doc:name="Transform Message" doc:id="8e80ff2a-8c8e-404c-b471-5a0899759a73" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+			<logger level="INFO" doc:name="Logger" doc:id="77879c0a-50cc-429e-ae2f-53f9aac9d755" message='#["end of for each"]'/>
+		</foreach>
+	</flow>
+</mule>

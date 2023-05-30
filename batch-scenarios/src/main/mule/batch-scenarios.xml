@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:batch="http://www.mulesoft.org/schema/mule/batch" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/batch http://www.mulesoft.org/schema/mule/batch/current/mule-batch.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="1e4f4df6-be98-4b43-9024-1bc32428bd25" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="015ef3a7-d3ae-4658-a542-77e74d6208b4" >
+		<file:connection workingDir="C:\Users\2281671\AnypointStudio\studio-workspace\batch-scenarios" />
+	</file:config>
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="1b55986e-8055-4665-9abc-c83468086e5f" >
+		<salesforce:basic-connection username="sowmya0689@gmail.com" password="darshil@03" securityToken="Xh4h7J2h3J3hvkSsaSo9ZnQ5h"/>
+	</salesforce:sfdc-config>
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="0ca7485c-2d52-4e0b-9c8b-1751fed3795f" >
+		<email:smtp-connection host="smtp.gmail.com" port="587" user="sowmya0689@gmail.com" password="kjfjruapnasxajir" >
+			<email:properties >
+				<email:property key="mail.smtp.starttls.enable" value="true" />
+			</email:properties>
+		</email:smtp-connection>
+	</email:smtp-config>
+	<flow name="batch-scenariosFlow" doc:id="0742b49b-7c3c-4a74-a67c-2f0b30b430cc" >
+		<http:listener doc:name="/batch" doc:id="cb5f891c-3491-4c56-aeeb-820c6c766dd4" config-ref="HTTP_Listener_config" path="/batch"/>
+		<set-payload value='#[[1,2,"a",3,"b",4,5,"c"]]' doc:name='[1,2,"a",3,"b",4,5,"c"]' doc:id="a8e49f45-b30d-4c0e-a49a-669e4c7bef90" />
+		<batch:job jobName="batch-scenariosBatch_Job" doc:id="c5ada2ff-5aec-4734-a60c-6ea596bc0acb" >
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="6c583eed-416b-4dcb-842d-c0f5293254ec" acceptPolicy="ALL" acceptExpression="#[payload is Number]">
+					<set-payload value="#[payload *10]" doc:name="payload *10" doc:id="9742a0cc-ea3b-4c1e-9aa6-1d35aa65b64f" />
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="6ed37521-0c6f-4105-ac83-6c9e0da5e3ea" size="2">
+						<logger level="INFO" doc:name="Logger" doc:id="0b0c3783-7a02-4bfa-a58f-009b11e1d6da" message='#[payload]'/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<ee:transform doc:name="Transform Message" doc:id="6cd49975-8a90-4c3e-9645-37ed61f09481" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="21a40be1-13af-4587-a052-15d111875d96" message="#[payload]"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="batch-scenariosFlow1" doc:id="c278faf0-1a40-41a1-917d-fc1c1a3f07eb" >
+		<http:listener doc:name="Listener" doc:id="9815dc71-aafa-42fb-8f14-4ce0ac1bb03c" config-ref="HTTP_Listener_config" path="/batchfailure"/>
+		<set-payload value='#[[1,2,"a",3,"b",4,5,"c"]]' doc:name='[1,2,"a",3,"b",4,5,"c"]' doc:id="7ba4092d-316e-4f02-9d5a-73e364875acc" />
+		<batch:job jobName="batch-scenariosBatch_Job-failure" doc:id="9de8e790-0167-4ce8-a5f4-1b7dec62c442" maxFailedRecords="10">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="6db39651-c8cb-4b18-b71c-0b0e8a6b241f" acceptPolicy="ALL" >
+					<set-payload value="#[payload *10]" doc:name="payload *10" doc:id="42ab4253-a260-4ed1-b40d-707836d456d6" />
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="cbe0c41e-9295-4636-8fe1-bc1e90a1b502" size="2" >
+						<logger level="INFO" doc:name="Logger" doc:id="791a7a83-8679-4237-b6ef-ce6ed847c405" message="#[payload]" />
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step1" doc:id="0ef47575-6474-4d61-be52-2a76865fb3ac" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="da82d781-eee3-4d2b-ad9e-766154dfdb46" message='#["The values in :::" ++ payload]'/>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<ee:transform doc:name="Transform Message" doc:id="9b4b3642-14a3-4dab-9a78-934ee0366a89" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="361f5eaf-00aa-4446-885f-fd1ed4c6a6b2" message="#[payload]" />
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="batch-scenariosFlow2" doc:id="6b508f77-5c33-497b-9507-6859fbee0814">
+		<http:listener doc:name="/batchstep" doc:id="56f5b323-8399-44bd-a067-69c1156cbe92" config-ref="HTTP_Listener_config" path="/batchstep" />
+		<set-payload value='#[[1,2,"a",3,"b",4,5,"c"]]' doc:name='[1,2,"a",3,"b",4,5,"c"]' doc:id="e8b44b64-257a-4a66-8eb9-d6a786678566" />
+		<batch:job jobName="batch-scenariosBatch_Job-batch-step" doc:id="718b47eb-f447-4631-9021-bbd871c1b802" maxFailedRecords="10">
+			<batch:process-records >
+				<batch:step name="Batch_Step" doc:id="89f3444e-e40e-4f84-b26e-584575e8aaf0" acceptPolicy="ALL" >
+					<set-payload value="#[payload *10]" doc:name="payload *1" doc:id="6d650a04-5c15-44ec-ab1b-a718381010d6" />
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="74af39d6-ad73-48c9-84fe-3e16ae5f5d2c" size="2" >
+						<logger level="INFO" doc:name="Logger" doc:id="4457c652-dba6-4330-8092-8823e736b5c7" message="#[payload]" />
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step1" doc:id="518b1cae-7d10-478d-bd1f-564d0fcb99d9" acceptPolicy="ALL" >
+					<set-payload value="#[payload + 5]" doc:name="payload + 5" doc:id="e49f7c44-72d8-440c-af85-e77f8833dbb6" />
+					<logger level="INFO" doc:name="Logger" doc:id="5ad6788b-b7f4-4f65-9059-d55461da5dfd" message='#[payload]' />
+				</batch:step>
+				<batch:step name="Batch_Step2" doc:id="4707ed84-7edc-4e1f-8c10-1519a020c46d" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="8ac82918-d029-4e87-a8a5-1fba6f9452b9" message='#["All the values in batch step-2:::::" ++ payload]'/>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="4500da97-2077-47ea-8309-f5d9ffe544cc" size="2">
+						<logger level="INFO" doc:name="Logger" doc:id="a3ef68f4-2365-42c9-a468-3e43c8d67849" message="#[payload]"/>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<ee:transform doc:name="Transform Message" doc:id="2e7c26a7-8943-4993-b40e-f4fbf9c78918" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<logger level="INFO" doc:name="Logger" doc:id="8c6f4168-f9d1-4c4c-8923-e87a512dded9" message="#[payload]" />
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+	<flow name="batch-scenarios-salesforce" doc:id="d552c2cf-1cc4-4df4-8f64-689fe70a227d" >
+		<file:listener doc:name="On New or Updated File" doc:id="e41f4a0c-2504-4f37-ac32-1f16fc9c4869" config-ref="File_Config" directory="src/main/resources/input" autoDelete="true">
+			<scheduling-strategy >
+				<fixed-frequency frequency="20000"/>
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="18b44b03-af12-4f27-8d20-fea4b1daa665" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<batch:job jobName="batch-scenariosBatch_salesforce" doc:id="19e51bfd-bc1b-461b-b9bf-b1e4c5ac1f20" maxFailedRecords="100">
+			<batch:process-records >
+				<batch:step name="Batch_Step3" doc:id="23f808f0-dffb-45a0-886c-b4bec8e7cfa0" acceptPolicy="ALL">
+					<ee:transform doc:name="Transform Message" doc:id="6024b370-23b9-49d8-9ee5-492e07bac0c5" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+	Email:payload.Email,
+	FirstName:payload.FirstName,
+	LastName:payload.LastName,
+	Phone:payload.Phone
+}]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="0d7770ee-69c1-4c26-a235-b602dbd7d8da" size="10">
+						<salesforce:create doc:name="Create" doc:id="18fabac6-c6fc-4a1e-b233-931be562bb52" config-ref="Salesforce_Config" type="Account" />
+						<ee:transform doc:name="Transform Message" doc:id="6783016a-b06f-44e6-8c8f-5e9340b779e4">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					</batch:aggregator>
+				</batch:step>
+				<batch:step name="Batch_Step4" doc:id="cdce7027-adca-474f-893e-153be2524eb3" acceptPolicy="ONLY_FAILURES">
+					<logger level="INFO" doc:name="Logger" doc:id="7f03b28b-e74b-43ea-984b-fb83f8560164" message="#[payload]" />
+					<ee:transform doc:name="Transform Message" doc:id="09104057-3a13-4272-82b5-aa50939e1d15">
+						<ee:message>
+							<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+					<batch:aggregator doc:name="Batch Aggregator" doc:id="fc239f23-a97f-4b2a-bbf5-f1688030fd86" size="100">
+						<email:send doc:name="Send" doc:id="5a1e4313-847a-426c-bcef-8d81657946b0" config-ref="Email_SMTP" fromAddress="sowmya0689@gmail.com" subject="All records which are failed">
+						<email:to-addresses>
+							<email:to-address value="sowmya.nalla01@gmail.com" />
+						</email:to-addresses>
+						<email:body>
+							<email:content><![CDATA[#["Hi
+Please find the attachment"]]]></email:content>
+						</email:body>
+						<email:attachments><![CDATA[#[{
+"sampleFile":payload
+
+}]]]></email:attachments>
+					</email:send>
+					</batch:aggregator>
+				</batch:step>
+			</batch:process-records>
+			<batch:on-complete >
+				<logger level="INFO" doc:name="Logger" doc:id="7104c44c-1f09-4318-a835-a5e650288b98" message="Job completed"/>
+			</batch:on-complete>
+		</batch:job>
+	</flow>
+</mule>
