@@ -1,0 +1,23 @@
+<flow name="parentPropagates" >
+    <http:listener doc:name="GET /accounts" config-ref="HTTP_Listener_config" path="/accounts"/>
+    <set-variable value="200" doc:name="quantity" variableName="quantity"/>
+    <flow-ref doc:name="childContinues" name="childContinues"/>
+    <logger level="INFO" doc:name="Successful Conclusion" message="Parent Flow concludes successfully"/>
+    <error-handler >
+      <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" >
+        <logger level="INFO" doc:name="handler reports" message="Parent error handler reports"/>
+      </on-error-propagate>
+    </error-handler>
+  </flow>
+  <flow name="childContinues" >
+    <validation:is-true doc:name="less than 150" expression="#[vars.quantity &lt; 150]" 
+    	message="Quantity above limit not allowed">
+      <error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:MAX_QUANTITY_EXCEEDED" />
+    </validation:is-true>
+    <logger level="INFO" doc:name="Successful Conclusion" message="Child Flow concludes successfully" />
+    <error-handler >
+      <on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" >
+        <logger level="INFO" doc:name="handler reports" message="Child error handler reports"/>
+      </on-error-continue>
+    </error-handler>
+  </flow>

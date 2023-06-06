@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ba88ca99-dac1-410a-9992-ccc33701d500" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<configuration doc:name="Configuration" doc:id="cae7887d-71af-4076-bf21-dffc142efdc2" defaultErrorHandler-ref="applicationError_Handler" />
+	<error-handler name="applicationError_Handler" doc:id="591dee44-75fe-40fb-bd2d-60649edf366e" >
+		<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="7bca3430-f544-4f86-af38-430de4123fe1" type="EXPRESSION">
+			<logger level="INFO" doc:name="Logger" doc:id="108b289c-868c-4818-8fe8-28ec3109ba86" />
+		</on-error-continue>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="28ba280e-cbf6-4ce9-91ce-acda441f742d" type="STREAM_MAXIMUM_SIZE_EXCEEDED">
+			<logger level="INFO" doc:name="Logger" doc:id="a863c5ee-7e8e-4e7a-abde-d7a71da5420c" message='#["\n************************** application default error handler fires"]' />
+		</on-error-propagate>
+	</error-handler>
+	<flow name="alwaysFail" doc:id="871d3e81-5260-411e-ac64-39451cbb8794" >
+		<validation:is-true doc:name="always False" doc:id="d17eab6b-4ebf-4b0c-991f-3f0e799c463c" message="I always do this to people">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:PERPERTUAL" />
+		</validation:is-true>
+	</flow>
+	<flow name="errorjourneyFlow" doc:id="1096ac02-80a9-4d15-a6fa-7af473320e61" >
+		<http:listener doc:name="GET /error" doc:id="d51a9382-8b9c-4488-9a21-afbce29df9b6" config-ref="HTTP_Listener_config" path="/error">
+			<http:error-response statusCode='#[vars.httpStatus default "500"]' reasonPhrase="Something blew up!">
+			</http:error-response>
+		</http:listener>
+		<logger level="INFO" doc:name="main" doc:id="4aa163ce-a1de-42cc-88a1-41a82f62f337" message='#["\n************************** main flow initializes"]'/>
+		<flow-ref doc:name="alwaysFail" doc:id="c9a1c6e9-c748-418a-975a-72b80baf8a3a" name="alwaysFail"/>
+		<flow-ref doc:name="childFlow" doc:id="2e5f6fd3-6c56-4d27-9a38-9a109d3ffab0" name="childFlow"/>
+		<logger level="INFO" doc:name="main flow" doc:id="7bdcb580-88e1-45ff-b409-1fff0909b044" message='#["\n************************** main flow completes"]'/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="false" doc:name="On Error Propagate" doc:id="fae81d8a-e86b-4622-a50d-89c5b0576cf1" >
+				<logger level="INFO" doc:name="Logger" doc:id="2e089a99-105c-4fec-bf4d-76dc02a068d9" message='#["\n************************** parent error handler fires"]'/>
+				<set-payload value='#["\n**************** Error seen in main flow"]' doc:name="Set Payload" doc:id="c0cdafc2-1667-40bf-8f34-9e87947aae33" />
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+		<flow name="childFlow" doc:id="948d0615-c923-4abd-921e-69b6a9e8fafc">
+		<logger level="INFO" doc:name="child" doc:id="a03e8ca4-c11b-411e-ac8a-069e81f03081" message='#["\n************************** child logger fires"]' />
+		<validation:is-null doc:name="has name" doc:id="60fd68da-f856-4930-9043-8af659546cd1" value="#[attributes.queryParams.name]">
+			<error-mapping sourceType="VALIDATION:NOT_NULL" targetType="APP:NAME-EXISTS" />
+		</validation:is-null>
+		<validation:is-true doc:name="no name" doc:id="6bdb013c-7140-49a5-8b38-dfda7f39e5f0" message="No name was found">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NO-NAME" />
+		</validation:is-true>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="false" doc:name="On Error Continue" doc:id="28a1354a-485a-4f85-9dd3-2e33ce87d41b" type="APP:NAME-EXISTS">
+				<logger level="INFO" doc:name="Logger" doc:id="d8ae072f-55fe-4854-9cd2-9ad572d14f72" message='#["\n************************** child error handler fires"]' />
+				<set-payload value='#["Error condition detected in the child flow"]' doc:name="Set Payload" doc:id="dcaaefa2-204d-49db-a760-5c08725817f0" />
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="false" doc:name="On Error Continue" doc:id="4910e83c-9e21-49bf-918e-273b5abcee2e" type="ANY">
+				<logger level="INFO" doc:name="Logger" doc:id="c2337daf-8196-4477-bf57-8c0a41060f32" message='#["\n************************** child generic error handler fires"]' doc:description="anything you feel like"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+	<flow name="reduceToTotalsFlow" doc:id="466ca5f5-fa3e-4af7-816e-0605f9ddb6bd" >
+		<ee:transform doc:name="reduce to totals" doc:id="3049579a-5a8d-4a58-9429-63ffffbaafbd" doc:description="this processes some records">
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+var pay = 
+"SalesOrderID OrderQty UnitPrice
+43659 70 2024.994
+43659 70 2024.994
+43660 1 419.4859
+43660 2 419.4859
+43661 1 8098.76
+"
+var dl = (pay splitBy '\n')[1 to -1]
+var idlist = (dl map (i,n) -> i replace /(\S+)\s.*/ with $[1]) distinctBy $
+var acc = idlist map {orderID: $, "count": 0, "cost": 0 }
+---
+{
+	datalist: dl,
+	justthekeys: idlist,
+	sums: dl reduce (item,a=acc) -> {
+		orderID: item replace /(\S+)\s.*/ with $[1],
+		count: acc.count + 1,
+	}
+	
+}
+]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="sample" ><![CDATA[%dw 2.0
+output application/dw
+---
+100]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+	</flow>
+	<flow name="stringHijinks" doc:id="c3753873-4951-4000-bd64-30de8b508463" >
+		<ee:transform doc:name="payload and vars" doc:id="795254b3-207a-4516-8363-556c346bdfcb" doc:description="sets up variable and payload" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/dw
+
+import * from dw::core::Strings
+
+var c1 = "This Old Clown"
+
+fun bannerize (s: String) = do {
+		var w = sizeOf(s) + 4
+		---
+		"\n" ++ ("*" repeat w)
+		++ "\n* $(s) *"
+		++ "\n" ++ ("*" repeat w)
+		
+	}
+
+---
+{
+	camel: camelize(underscore(c1)),
+	upscale: upper(c1),
+	dashed: dasherize(c1),
+	bannered: bannerize("The best time ever")
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="longestString" ><![CDATA[%dw 2.0
+output application/java
+---
+"this is the longest string"]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="28577fd6-96b9-4ba7-b505-341190faed4d" doc:description="This is a simple observer"/>
+	</flow>
+	<flow name="findingPrimes" doc:id="3e3ab7ff-c5b0-40ef-8e6c-d22636c62b19" >
+		<ee:transform doc:name="Transform Message" doc:id="068bfa2b-d2a1-4c71-b276-f2d8780061a2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+
+var i = "One"
+---
+{
+	(i): 1,
+	two: 2
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>

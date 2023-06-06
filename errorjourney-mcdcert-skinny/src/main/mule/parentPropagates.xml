@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<flow name="parentPropagates" doc:id="15b86230-3993-4dc4-9abe-ed6f0aa142b4" >
+		<http:listener doc:name="GET /accounts" doc:id="756e79e4-d7cf-447f-bbb7-bfe0a8d104b5" config-ref="HTTP_Listener_config" path="/accounts" doc:description="This flow, and its called child are referenced in Quiz Questions sections: 10.04"/>
+		<set-variable value="200" doc:name="quantity" doc:id="792095d4-f2c9-4394-b2c5-a233318ce2ce" variableName="quantity"/>
+		<flow-ref doc:name="childContinues" doc:id="9e47d92d-eb5d-4700-b2da-965c0e29039f" name="childContinues"/>
+		<logger level="INFO" doc:name="Successful Conclusion" doc:id="5ba9d9cb-88ee-4617-a26f-67b162c56938" message="Parent Flow concludes successfully"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b9144fd7-b1e1-4244-8e20-9bf0bec22a21" >
+				<logger level="INFO" doc:name="handler reports" doc:id="0a50287e-dbed-4231-bc50-2e9d16b93ab5" message="Parent error handler reports"/>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="childContinues" doc:id="7507e2f9-a708-4643-b116-85ec86f626b2" >
+		<validation:is-true doc:name="less than 150" doc:id="159cb029-c7d4-4269-94da-b1884f294239" expression="#[vars.quantity &lt; 150]" message="Quantity above limit not allowed">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:MAX_QUANTITY_EXCEEDED" />
+		</validation:is-true>
+		<logger level="INFO" doc:name="Successful Conclusion" doc:id="e980882b-2973-49df-824e-88b52fb21a98" message="Child Flow concludes successfully" />
+		<error-handler >
+			<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="e911243f-decb-442f-9e28-683467010fa4" >
+				<logger level="INFO" doc:name="handler reports" doc:id="97da58d2-6363-4c4a-90b2-aafcbaa4a2e7" message="Child error handler reports"/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
+</mule>

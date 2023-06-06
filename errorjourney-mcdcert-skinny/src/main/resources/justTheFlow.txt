@@ -1,0 +1,18 @@
+	<flow name="oneChildFlow"  >
+		<logger level="INFO" doc:name="child" message='#["\n******\m child logger reports\n******"]'/>
+		<validation:is-null doc:name="has name" value="#[attributes.queryParams.name]">
+			<error-mapping sourceType="VALIDATION:NOT_NULL" targetType="APP:NAME-EXISTS" />
+		</validation:is-null>
+		<validation:is-true doc:name="no name" message="No name was found" expression="#[false]">
+			<error-mapping sourceType="VALIDATION:INVALID_BOOLEAN" targetType="APP:NO-NAME" />
+		</validation:is-true>
+		<error-handler>
+			<on-error-continue enableNotifications="true" logException="false" doc:name="On Error Continue" type="APP:NAME-EXISTS">
+				<logger level="INFO" doc:name="Logger" message='#["\n******\n child error handler reports\n******"]' />
+				<set-payload value='#["Error condition detected in the child flow"]' doc:name="Set Payload" />
+			</on-error-continue>
+			<on-error-continue enableNotifications="true" logException="false" doc:name="On Error Continue" type="ANY">
+				<logger level="INFO" doc:name="Logger" message='#["\n******\n child flow fails for unspecified reason\n******"]'/>
+			</on-error-continue>
+		</error-handler>
+	</flow>
