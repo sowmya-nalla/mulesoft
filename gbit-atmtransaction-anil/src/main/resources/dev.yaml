@@ -1,0 +1,16 @@
+db:
+  host: "muledbwest.cwjggmpc75fy.us-west-2.rds.amazonaws.com"
+  port: "3306"
+  user: "admin"
+  password: "mule1234"
+  datbase: "muledb"
+ 
+mail:
+  host: "smtp.gmail.com"
+  port: "465"
+  user: "youremailsravan"
+  password: "yourpass"
+  
+amazon:
+  Accesskey: "acckey"
+  secretkey: "seckey"

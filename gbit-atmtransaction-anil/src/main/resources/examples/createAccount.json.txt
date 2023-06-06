@@ -1,0 +1,12 @@
+{
+"customerName" : Narayana,
+"bank":ICICI,
+"type" : savings,
+"branchName":depot1,
+"accountNum": "1234100001",
+"atmPin": "1234",
+"ifscCode": ICICIB01,
+"depositAmount" : 90000000,
+"mailId" : dokka3@gmail.com,
+"contact" : "8919589256"
+}

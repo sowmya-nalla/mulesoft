@@ -1,0 +1,555 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:s3="http://www.mulesoft.org/schema/mule/s3"
+	xmlns:email="http://www.mulesoft.org/schema/mule/email" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	
+	
+	<flow name="createAccount" doc:id="e8901b77-66b6-4111-96b5-5b3d98989458" >
+		<flow-ref doc:name="[Account No]" doc:id="4f3ab081-1ed6-4918-bb44-8951f46caede" name="SaveAccountDetails"/>
+		<choice doc:name="Choice" doc:id="81efc823-a8be-487e-b421-df906c3b403b" >
+			<when expression="#[sizeOf(vars.fetchAccNo) == 0]">
+				<db:insert doc:name="[AccIns]" doc:id="dfca20e9-f8d9-4751-afe0-09cc1afae6d8" config-ref="AmazonMySQLRDS_Config">
+			<db:sql><![CDATA[INSERT INTO Bank_Transactions
+(custName,custAccNum,atmPin,bankName,ifscCode,branchName,totalBalance,transactionTimeStamp,mailId,phoneNumber,accountType)
+ VALUES (:custName,:custAccNum,:atmPin,:bankName,:ifscCode,:branchName,:totalBalance,:transactionTimeStamp,:mailId,:phoneNumber,:accountType);]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+custName : attributes.queryParams.customerName  ,
+custAccNum:payload.accountNum,
+atmPin : payload.atmPin,
+bankName : attributes.queryParams.bank,
+ifscCode : payload.ifscCode,
+branchName : attributes.queryParams.branchName,
+totalBalance : payload.depositAmount ,
+transactionTimeStamp : now() as String,
+mailId : payload.mailId ,
+phoneNumber : payload.contact,
+accountType : attributes.queryParams.'type'
+}]]]></db:input-parameters>
+		</db:insert>
+				<email:send doc:name="Send Email" doc:id="bcb52756-ca9e-42a3-b97a-ecb7fdd4c83e" config-ref="Email_SMTP" subject='#["Congratulations..!Account Created"]'>
+					<email:to-addresses>
+						<email:to-address value="dokka3@gmail.com" />
+						<email:to-address value="#[vars.setPayload.mailId as String default null]" />
+					</email:to-addresses>
+					<email:body contentType="text/html">
+						<email:content><![CDATA[#[" <p>Congratulations ! Your account is created Successfully with Account Number :</p> " ++ (vars.setPayload.accountNum as String)]]]></email:content>
+					</email:body>
+				</email:send>
+				<s3:create-object doc:name="Create object" doc:id="f246c410-e1d9-4b44-8951-b8f4c73d0d08" config-ref="Amazon_S3_Config" bucketName="mulebank-createaccount" key="#[vars.setAttributes.'AmazonS3CustomHeader' as String ++ &quot;.json&quot;]">
+					<s3:object-content><![CDATA[#[%dw 2.0
+output application/json
+---
+vars.customPayload.outparams]]]></s3:object-content>
+				</s3:create-object>
+				<set-payload value='#["Account Number : " ++ vars.saveAccountNo ++ " "  ++ " and account details has been created successfully."]' doc:name="[Out payload]" doc:id="d0effeef-a980-4a40-a15f-149729ec58d5" />
+				<set-variable value="201" doc:name="[Set Status]" doc:id="eefcbb4a-03dd-44d9-a551-8ad66fa3c031" variableName="setStatus"/>
+				<logger level="INFO" doc:name="Logger" doc:id="140be49c-2f22-4728-9006-36eeab29a579" message='#["Account Number " ++ vars.saveAccountNo ++ " "  ++ "successfully created."]' />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="[out logger]" doc:id="35dbb905-e3f8-4186-abfc-7ab61dd8a060" message='#["Account Number " ++ vars.saveAccountNo ++ " "  ++ " is already in Database."]' />
+				<set-payload value='#["Account Number :" ++ vars.saveAccountNo ++ " "  ++ " Already Exists."]' doc:name="[Out Payload]" doc:id="8c053e09-b3b7-4f86-a15f-06b4a8b95767" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="MailingScheduler" doc:id="bd429f0d-2c44-4b43-a97f-44c21a34c39b" >
+		<scheduler doc:name="Scheduler" doc:id="9c6deed4-04ed-44c0-a7c1-252701b9e85a" >
+			<scheduling-strategy >
+				<cron expression="0 0 19 1/1 * ? *" />
+			</scheduling-strategy>
+		</scheduler>
+		<db:select doc:name="Select" doc:id="04fccc81-1993-4534-b165-e2e669b0b051" config-ref="AmazonMySQLRDS_Config" target="setBankAccounts">
+			<error-mapping sourceType="DB:CONNECTIVITY" targetType="APP:DATABASE_CONNECTION_ISSUE" />
+			<error-mapping sourceType="DB:BAD_SQL_SYNTAX" targetType="APP:DATABASE_SQLSYNTAX_ISSUE" />
+			<error-mapping sourceType="EXPRESSION" targetType="APP:DATBASE_INP_OUTP_EXPRESSION_ERROR" />
+			<db:sql ><![CDATA[select * from Bank_Transactions]]></db:sql>
+		</db:select>
+		<ee:transform doc:name="[Transform Array to Json]" doc:id="2f3edf00-c9b2-4133-8afc-8fb7f5c4b754" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+
+vars.setBankAccounts map((payload01,inadex) ->
+
+ConvtotalBalance:payload01.totalBalance as Number )
+
+	 
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<try doc:name="Try" doc:id="0ee3b1ae-e198-4457-974f-0263e56baac6" >
+			<foreach doc:name="For Each" doc:id="efd59d65-0608-40e7-aebe-ab47f55ecc52" collection="#[payload]">
+			<email:send doc:name="[Send Balance]" doc:id="2bcc814c-664d-4d69-9d72-946a67792604" config-ref="Email_SMTP" subject='#["Todays Total Balance!"]'>
+			<email:to-addresses>
+				<email:to-address value="dokka3@gmail.com" />
+				<email:to-address value="anelkumar159@gmail.com" />
+			</email:to-addresses>
+			<email:body contentType="text/html">
+				<email:content><![CDATA[#[" <p>Your total Balance as on Today is :</p> "++ payload.ConvtotalBalance  as Number]]]></email:content>
+			</email:body>
+		</email:send>
+		</foreach>
+			<error-handler >
+				<on-error-continue enableNotifications="true" logException="true" doc:name="On Error Continue" doc:id="5bb93017-29b6-423d-a717-4a8016818c03" type="EMAIL:CONNECTIVITY, EMAIL:RETRY_EXHAUSTED, EMAIL:SEND">
+					<ee:transform doc:name="Transform Message" doc:id="05a3d509-4c6e-4cc7-a6b9-7717cd734e9c" >
+						<ee:message >
+							<ee:set-payload ><![CDATA[error.errorMessage as String]]></ee:set-payload>
+						</ee:message>
+					</ee:transform>
+				</on-error-continue>
+			</error-handler>
+		</try>
+		<logger level="INFO" doc:name="Logger" doc:id="e4fe0571-b734-4462-9531-d94358b7439d" message="#[payload]"/>
+	</flow>
+	<error-handler name="gbit_Global_Error_Handler" doc:id="e2b6bb12-86e4-4366-9dd8-661cb969284b" >
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="57aa62ca-098c-4c64-bf14-bc232cf736b3" type="APP:DATABASE_CONNECTION_ISSUE,APP:DATABASE_SQLSYNTAX_ISSUE,APP:DATBASE_INP_OUTP_EXPRESSION_ERROR">
+			<ee:transform doc:name="CustomMsg" doc:id="ab36367f-ead2-42b7-b07b-831e895329d2">
+				<ee:message>
+					<ee:set-payload><![CDATA[%dw 2.0
+ output application/json
+---
+if(error.errorType.identifier=='DATABASE_CONNECTION_ISSUE')
+{
+   Error:"DataBase Connectivity Issue try Connecting after sometime or check the description and Error Description : " ++ error.description as String 
+ 
+}
+else
+if(error.errorType.identifier=='DATABASE_SQLSYNTAX_ISSUE')
+{
+	 Error:"DataBase syntax Issue. Error Description : " ++ error.description as String
+}
+else
+if(error.errorType.identifier=='DATBASE_INP_OUTP_EXPRESSION_ERROR')
+{
+	 Error:"Expressions error. Error Description : " ++ error.description as String
+}
+else 
+null
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="34b7a497-7f27-4d36-bc28-a41c19573895" type="DB:CONNECTIVITY,DB:BAD_SQL_SYNTAX,EXPRESSION">
+			<ee:transform doc:name="Message" doc:id="775d3a22-2143-4d14-9266-c86c8004ce5a" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+ output application/json
+---
+if(error.errorType.identifier=='CONNECTIVITY')
+{
+   Error:"DataBase Connectivity Issue try Connecting after sometime or check the description and Error Description : " ++ error.description as String 
+ 
+}
+else
+if(error.errorType.identifier=='BAD_SQL_SYNTAX')
+{
+	 Error:"DataBase syntax Issue. Error Description : " ++ error.description as String
+}
+else
+if(error.errorType.identifier=='EXPRESSION')
+{
+	 Error:"Expressions error. Error Description : " ++ error.description as String
+}
+else 
+null
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b375800e-9872-4c98-b7c6-dcb9341a6b19" type="EMAIL:CONNECTIVITY, EMAIL:RETRY_EXHAUSTED, EMAIL:SEND" >
+			<ee:transform doc:name="Msg" doc:id="a3d59241-7c10-4afb-954e-0d234fb0e4e0" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+ output application/json
+---
+if(error.errorType.identifier=='CONNECTIVITY')
+{
+   Error:"Email Connectivity issues with host isn't responding or timeout issues from mail server, please check the error description and the logger : " ++ error.description as String 
+ 
+}
+else
+if(error.errorType.identifier=='RETRY_EXHAUSTED')
+{
+	 Error:"Maxiumum Retries attempt reached : " ++ error.description as String
+}
+else
+if(error.errorType.identifier=='SEND')
+{
+	 Error:"Email Send Error , Please check the Description for the cause of error Description :\n "  ++  error.description as String
+}
+else 
+null
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+		<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="3efc210f-5ad2-41d8-9232-cb626141d658" type="ANY" >
+			<ee:transform doc:name="Msg" doc:id="869027b9-a28d-40b9-a432-e58609e24be0" >
+				<ee:message >
+					<ee:set-payload ><![CDATA[%dw 2.0
+ output application/json
+---
+{
+   "Custom Error":"Unknown Custom Error please check the below Description :\n"  ++ error.description as String 
+ }
+
+]]></ee:set-payload>
+				</ee:message>
+			</ee:transform>
+		</on-error-propagate>
+	</error-handler>
+	<sub-flow name="SaveAccountDetails" doc:id="ebc8b255-7e27-4779-98ae-2deebb893e80">
+		<ee:transform doc:name="[saveAccountNoVar]" doc:id="f617a6c9-ecc9-4b28-a81d-ff71b08ed70f" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="setPayload" ><![CDATA[%dw 2.0
+output application/json
+---
+payload
+]]></ee:set-variable>
+				<ee:set-variable variableName="saveAccountNo" ><![CDATA[%dw 2.0
+output application/json
+---
+
+
+payload.accountNum  as String
+
+]]></ee:set-variable>
+				<ee:set-variable variableName="customPayload" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+    outparams:payload ++ attributes.queryParams
+ }]]></ee:set-variable>
+				<ee:set-variable variableName="setAttributes" ><![CDATA[%dw 2.0
+output application/json
+---
+
+if(!isBlank(attributes.queryParams.customerName as String default ""))
+{
+ AmazonS3CustomHeader: payload.accountNum ++"_" ++
+ attributes.queryParams.customerName as String
+}
+else
+null
+]]></ee:set-variable>
+				<ee:set-variable variableName="saveAttributes" ><![CDATA[%dw 2.0
+output application/json
+---
+ if((attributes.rawRequestPath contains 'checkBalance' ) or (attributes.requestUri  contains 'checkBalance' ) )
+  path:"checkBalance"
+ else
+  if((attributes.rawRequestPath contains 'withDraw' ) or (attributes.requestUri  contains 'withDraw') )
+    path:"withDraw"
+   else
+    null
+
+]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:select doc:name="[Select&amp;FetchRec]" doc:id="d52a3a95-70c8-41c3-a622-765b4ec05f2b" config-ref="AmazonMySQLRDS_Config" target="fetchAccNo">
+			<db:sql><![CDATA[select * from Bank_Transactions where custAccNum = :custAccNum ;]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+custAccNum: vars.saveAccountNo
+
+}]]]></db:input-parameters>
+		</db:select>
+	</sub-flow>
+	<flow name="CheckBalance" doc:id="5344b667-6fe4-4a77-8f97-1776007c99df" initialState="started">
+		<flow-ref doc:name="Flow Reference" doc:id="23b9b0fe-824b-4525-9b03-ba1f7b2e6e8f" name="SaveAccountDetails"/>
+		<choice doc:name="Choice" doc:id="f025e893-1010-4b2b-8586-b5c8b2d890a1" >
+			<when expression="#[sizeOf(vars.fetchAccNo ) != 0]">
+				<logger level="INFO" doc:name="Logger" doc:id="de3736db-371d-4ca4-8132-cac2780291a7" message="#[vars.fetchAccNo]"/>
+				<flow-ref doc:name="Flow Reference" doc:id="2768da4d-b5eb-4747-8f71-ea550a3746cf" name="PreProcessor" />
+				<set-payload  value="#[payload]" doc:name="Set Payload" doc:id="e1fb5f6e-da6d-4b94-9ace-803f9865027b" />
+				<logger level="INFO" doc:name="Logger" doc:id="84f5a308-4e1f-4da1-9e07-fc4af4cc28cf" message='Success'/>
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="[out logger]" doc:id="88b3831d-6110-4010-a57f-cb8822d9c167" message='#["Account Number " ++ vars.saveAccountNo ++ " "  ++ " does not exists."]' />
+				<set-payload value='#["Account Number :" ++ vars.saveAccountNo as String ++ " "  ++ " does not exist."]' doc:name="[Out Payload]" doc:id="37aec30b-9214-4f72-bb8b-98d935007a68" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="updateWrongPin" doc:id="118484e0-70a5-4112-9257-3270de983f60" initialState="started">
+		<set-variable value='#[if (payload.fetchAccNo[0].wrongPin  &lt; 4 )
+    {wrongPin:payload.fetchAccNo[0].wrongPin + 1 } 
+else 
+ null]' doc:name="Increment WrongPin " doc:id="4d30ad5a-5b38-45ad-9492-99a023c5c0ff" variableName="setIncrValueToWrongPin" />
+		<db:update doc:name="[updateWrongPin]" doc:id="c2d2f492-14e3-4b5e-8d7b-b5598d57557d" config-ref="AmazonMySQLRDS_Config" target="setWrongPin">
+					<db:sql><![CDATA[UPDATE  Bank_Transactions 
+SET muledb.Bank_Transactions.wrongPin =:wrongPin	
+WHERE muledb.Bank_Transactions.custAccNum = :custAccNum]]></db:sql>
+					<db:input-parameters><![CDATA[#[{
+wrongPin : vars.setIncrValueToWrongPin.wrongPin as Number ,
+custAccNum : payload.fetchAccNo[0].custAccNum as String
+}]]]></db:input-parameters>
+				</db:update>
+		<email:send doc:name="[sendEmail]PIN Attempts" doc:id="b29e935a-3e5c-4d25-a408-7d7d90ef8c9d" config-ref="Email_SMTP" subject='#["Failed Attempt !"]' >
+			<email:to-addresses >
+				<email:to-address value="#[payload.fetchAccNo[0].mailId as String]" />
+				<email:to-address value="anelkumar159@gmail.com" />
+			</email:to-addresses>
+			<email:body contentType="text/html" >
+				<email:content ><![CDATA[#[" <p>This is to inform you that there’s a failed attempt happened
+while transaction . Your Account will be blocked after 3 attempts </p> "]]]></email:content>
+			</email:body>
+		</email:send>
+		<db:select doc:name="Select" doc:id="9d022c60-a7e2-476e-bdff-197cf8149080" config-ref="AmazonMySQLRDS_Config" target="setWrongPin">
+			<db:sql ><![CDATA[select wrongPin from Bank_Transactions where custAccNum = :custAccNum ;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{custAccNum : payload.fetchAccNo[0].custAccNum as String}]]]></db:input-parameters>
+		</db:select>
+		<set-payload value='#["Login Attempt Failed attempts remaining:" ++ 3 -  vars.setWrongPin[0].wrongPin as Number default null]' doc:name="upWrongPinPayload" doc:id="5aece188-9c75-4bf0-8f4f-43f10e21572f" />
+	</flow>
+	<flow name="UpdateAccStatus" doc:id="c0f14c87-4860-40e8-aa51-e1e0c9809335">
+		<db:update doc:name="[updateAccountStatus]" doc:id="31d81d28-99b1-4836-928b-de778512d3c6" config-ref="AmazonMySQLRDS_Config" doc:description="Select gives u Payload,
+update,insert does not give the payload in target variable hence payload becomes null.">
+					<db:sql><![CDATA[UPDATE  Bank_Transactions 
+SET muledb.Bank_Transactions.accountStatus ='Blocked'	
+WHERE muledb.Bank_Transactions.custAccNum = :custAccNum;]]></db:sql>
+					<db:input-parameters><![CDATA[#[custAccNum : payload.fetchAccNo[0].custAccNum as String]]]></db:input-parameters>
+				</db:update>
+		<email:send doc:name="[Send Email]Blocked A/C" doc:id="ca4ab618-c2d5-4067-97fd-a2f91487a513" config-ref="Email_SMTP" subject='#["Account Blocked !"]' >
+			<email:to-addresses >
+				<email:to-address value="#[vars.fetchAccNo[0].mailId as String]" />
+				<email:to-address value="anelkumar159@gmail.com" />
+			</email:to-addresses>
+			<email:body contentType="text/html" >
+				<email:content ><![CDATA[#[" <p>This is to inform you that Your Account has been be blocked due to 3 failed attempts. 
+Please reach out nearest branch to unblock </p> "]]]></email:content>
+			</email:body>
+		</email:send>
+		<set-payload value="#[[]]" doc:name="Set Payload" doc:id="2b02a2ae-6c1a-4ccb-837a-bcd673768245" />
+	</flow>
+	<flow name="UpdateAccBalance" doc:id="c3596986-9d6f-463b-b1a3-299b2ae8a8a1" >
+		<ee:transform doc:name="Transform Message" doc:id="03b4c1b3-cee0-455c-8d67-6acaf61073f4" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="setBalance" ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  upDateBal: payload.fetchAccNo[0].totalBalance as Number - payload.inputPayload.amountToBeWithdraw as Number ,
+  payload: payload.inputPayload,
+  maildId: payload.fetchAccNo[0].mailId as String default null
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<db:update doc:name="[updateAccbalance]" doc:id="c6ae1987-5ed1-45a7-b479-ae6c5cfe8a05" config-ref="AmazonMySQLRDS_Config" >
+			<db:sql ><![CDATA[UPDATE  Bank_Transactions 
+SET muledb.Bank_Transactions.totalBalance = :setBalance	
+WHERE muledb.Bank_Transactions.custAccNum = :custAccNum;]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	custAccNum : payload.fetchAccNo[0].custAccNum as String,
+    setBalance : vars.setBalance.upDateBal as Number
+
+}]]]></db:input-parameters>
+		</db:update>
+		<email:send doc:name="Debit Reminder A/C" doc:id="4ab39774-004d-420d-aba8-046b2e593b34" config-ref="Email_SMTP" subject='#["Transaction Alert!"]' >
+			<email:to-addresses >
+				<email:to-address value="#[vars.setBalance.'maildId' as String default null]" />
+				<email:to-address value="anelkumar159@gmail.com" />
+			</email:to-addresses>
+			<email:body contentType="text/html" >
+				<email:content ><![CDATA[#[" <p>This is to inform you that Your Account has been debited with</p> " 
+++ vars.setBalance.payload.amountToBeWithdraw as Number ++ "<p>amount and your Total Balance is xxxx </p>" ++ vars.setBalance.upDateBal as Number]]]></email:content>
+			</email:body>
+		</email:send>
+		<set-payload value='#[{
+	outpayload:"Amount" ++ vars.setBalance.payload.amountToBeWithdraw as Number ++ " is debited  and Your Total Balance is " ++ vars.setBalance.upDateBal as  Number default null
+	
+}]' doc:name="outPayload" doc:id="62df3d23-3b29-4c1b-8014-c2867a52c39e" />
+	</flow>
+	<sub-flow name="PreProcessor" doc:id="f2d58fd8-4922-4294-ae98-535e3ff17c73">
+		<ee:transform doc:name="Transform Message" doc:id="7cb30390-d515-4ae0-8145-18797e696ec8" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+
+/*Custom Dataweave Script by Anil -29-12-2020 */
+output application/json
+ 
+var Counter = 1
+var TableFlag = (TableFlag = ''as String) -> TableFlag
+
+
+---
+ LO:if (vars.saveAttributes.path  == 'checkBalance' )
+{
+	/*Check if Account status is active or inActive */
+	  C1:if (vars.fetchAccNo[0].accountStatus as String == "Active")
+	      {
+			/* Check if Datbase atmpin   is equal to payld the atmpin and display the results */
+	  C2:      if (vars.fetchAccNo[0].atmPin as String == vars.setPayload.atmPin as String and vars.fetchAccNo[0].wrongPin <= 3)
+	               { outPayload1: "Your Total Balance as on " ++   now().day as String ++" "++ now().hour ++":"++ now().minutes ++ " is " ++ vars.fetchAccNo[0].totalBalance as Number default null} 
+	           else 
+	                    /*Check ATM PIN with wrongPin,if cond is false then update the db accordingly */ 
+	    C3:          if ( vars.fetchAccNo[0].atmPin as String != vars.setPayload.atmPin as String  and vars.fetchAccNo[0].wrongPin == 3)
+	                     OP1: {
+		                     	 
+									/*update the DBa ccount status to Blocked*/	
+									
+									L21: lookup('UpdateAccStatus',{fetchAccNo:vars.fetchAccNo},4000000) ,	
+									 outPayload2 : "Maximum Attempts reached .Your Account: "++ vars.fetchAccNo[0].custAccNum as String ++ " is temporarily blocked. Please reach nearest Branch." default null ,
+									
+							        //updateTableFlag1 :TableFlag('Y') as String default TableFlag()
+						     }
+					   
+		 	         else{
+		 C4:	                if ( vars.fetchAccNo[0].wrongPin < 3){
+		 	                      /*Increment the wrong pin by 1 Note: u can use Lookup function to call the flow */
+		 	           			OP2: {
+	 	           						L2:lookup('updateWrongPin', {fetchAccNo:vars.fetchAccNo } , 7500000 )
+					 	                // updateTableFlag2:TableFlag('Y') as String default TableFlag() ,
+		 	       
+		 	           		         }
+		 	           		      
+		 	           		      }
+		 	           		      else
+		 	           		      null
+		 	           }		      
+		 	               
+	    
+	    
+	     }
+	     
+	    else 
+	    { 
+	      outPayload4:"Your Account:"++ vars.fetchAccNo[0].custAccNum as String ++" is temporarily blocked. Please reach nearest Branch."default null,
+	     /* L2: lookup('OutputPayload',{outpayload:"Your Account:"++ vars.fetchAccNo[0].custAccNum as String ++"is temporarily blocked. Please reach nearest Branch."default null}, 25000 as Number) */
+	     //This is the last line and written to avoid the bug that executes always.
+	     }
+	    
+}
+
+else
+{ 
+	 L2: if(vars.saveAttributes.path  == 'withDraw')
+	 {
+		/*Check if Account status is active or inActive */
+	  C1:if (vars.fetchAccNo[0].accountStatus as String == 'Active')
+	      {
+			/* Check if Datbase atmpin is equal to payld the atmpin and display the results */
+	  C2:      if (vars.fetchAccNo[0].atmPin as String == vars.setPayload.atmPin as String and vars.fetchAccNo[0].wrongPin <= 3)
+	               {
+	               	  INC1: if(vars.fetchAccNo[0].totalBalance as Number <= vars.setPayload.amountToBeWithdraw as Number)
+	               	   {
+	               	       outPayload1: "Insufficient Funds"
+	               	   
+	               	   }
+	               	   else
+	               	      INC2: if(vars.fetchAccNo[0].totalBalance as Number > vars.setPayload.amountToBeWithdraw as Number)
+	               	  			{
+	               	  			 
+	               	  			  L3:lookup('UpdateAccBalance',{fetchAccNo:vars.fetchAccNo,inputPayload:vars.setPayload},7500000) 
+	               	  			  
+	               	  			}
+               	   				else
+	               	   			null
+	               	   
+	               } 
+	           else 
+	                /*Check ATM PIN with wrongPin,if cond is false then update the db accordingly */ 
+	    C3:        if ( vars.fetchAccNo[0].atmPin as String != vars.setPayload.atmPin as String  and vars.fetchAccNo[0].wrongPin == 3)
+	                     OP1: {
+	                     	   outPayload2 : "Maximum Attempts reached .Your Account:"++ vars.fetchAccNo[0].custAccNum as String ++ "is temporarily blocked. Please reach nearest Branch." default null ,
+								
+								/*update the DBa ccount status to Blocked*/	
+								
+								L21: lookup ('UpdateAccStatus',{fetchAccNo:vars.fetchAccNo},4000000) default null 
+						        //updateTableFlag1 :TableFlag('Y') as String default TableFlag()
+						     }
+					   
+		 	       else{
+		 C4:	                if ( vars.fetchAccNo[0].wrongPin < 3){
+		 	                      /*Increment the wrong pin by 1 Note: u can use Lookup function to call the flow */
+		 	           			OP2: {
+	 	           						L2:lookup('updateWrongPin', {fetchAccNo:vars.fetchAccNo } , 7500000 )
+					 	                // updateTableFlag2:TableFlag('Y') as String default TableFlag() ,
+					 	                
+		 	       
+		 	           		         }
+		 	           		      
+		 	           		      }
+		 	           		      else
+		 	           		      null
+		 	           }		      
+		 	               
+	    
+	    
+	     }
+	     
+	    else 
+	    { 
+	      outPayload4:"Your Account:"++ vars.fetchAccNo[0].custAccNum as String ++"is temporarily blocked. Please reach nearest Branch."default null,
+	     /* L2: lookup('OutputPayload',{outpayload:"Your Account:"++ vars.fetchAccNo[0].custAccNum as String ++"is temporarily blocked. Please reach nearest Branch."default null}, 25000 as Number) */
+	     //This is the last line and written to avoid the bug that executes always.
+	     }
+	     
+	 }
+	  else 
+	  null
+ 
+	    
+}
+
+
+ 	
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<set-payload value="#[payload]" doc:name="Set Payload" doc:id="805c9dd7-4ced-4b69-9044-0601da0dd147" />
+	</sub-flow>
+	<flow name="WithDraw" doc:id="68368a47-df46-4d49-8d2a-e9c86c25b949" >
+		<flow-ref doc:name="Flow Reference" doc:id="168e3e66-b3c6-483a-90a0-a703a8206f25" name="SaveAccountDetails" />
+		<choice doc:name="Choice" doc:id="270c2b06-3e47-4230-a14a-8a72b69d7c71" >
+			<when expression="#[sizeOf(vars.fetchAccNo ) != 0]" >
+				<logger level="INFO" doc:name="Logger" doc:id="da87a87c-4b63-4dea-8239-e192402ef5fd" message="#[vars.fetchAccNo]" />
+				<flow-ref doc:name="Flow Reference" doc:id="9b0b81a9-1b58-41c0-8c5d-09bfc90e11e7" name="PreProcessor" />
+				<logger level="INFO" doc:name="Logger" doc:id="60e25f1f-83af-4551-be2c-b7b91c2c4f97" message="Success" />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="[out logger]" doc:id="4798e3fb-410c-4760-9a99-f3892f139d68" message='#["Account Number " ++ vars.saveAccountNo ++ " "  ++ " does not exists."]' />
+				<set-payload value='#["Account Number :" ++ vars.saveAccountNo ++ " "  ++ " does not Exists."]' doc:name="[Out Payload]" doc:id="5bc22721-2811-423e-a2ec-ae72588476a8" />
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="UnBlock" doc:id="4bff9d5b-f1c9-4442-b55c-eb3ef75450d3" >
+		<flow-ref doc:name="Flow Reference" doc:id="4575f676-f0d7-4297-9f93-799e2a72be98" name="SaveAccountDetails" />
+		<choice doc:name="Choice" doc:id="5306580f-e28e-4f32-b1a4-e724a62b476e" >
+			<when expression="#[sizeOf(vars.fetchAccNo ) != 0]" >
+				<logger level="INFO" doc:name="Logger" doc:id="2a80bbc9-3285-413e-b4be-694244bebcd1" message="#[vars.fetchAccNo]" />
+				<validation:is-true doc:name="Is true" doc:id="94f4300d-153f-472d-a4b7-b643a40a9be0" message='#["Account "++ vars.fetchAccNo[0].custAccNum as String default null  ++ " is Active."]' expression="#[vars.fetchAccNo[0].accountStatus as String != 'Active']"/>
+				<db:update doc:name="Update" doc:id="dd4294c2-d064-4583-8307-b176ce9af6da" config-ref="AmazonMySQLRDS_Config">
+					<db:sql ><![CDATA[UPDATE  Bank_Transactions 
+SET muledb.Bank_Transactions.accountStatus = "Active" ,	muledb.Bank_Transactions.wrongPin = 0
+WHERE muledb.Bank_Transactions.custAccNum = :custAccNum]]></db:sql>
+					<db:input-parameters ><![CDATA[#[{custAccNum : vars.fetchAccNo[0].custAccNum as String}]]]></db:input-parameters>
+				</db:update>
+				<set-payload value='#["Account Number : " ++ vars.saveAccountNo ++ " has been un blocked successfully."]' doc:name="[Out Payload]" doc:id="1d7d23ef-5932-43d9-8fd6-8bb3c3a4b5d0" />
+				<email:send doc:name="[Send Email] Un Blocked A/C" doc:id="9ad46393-a498-4cbd-8f18-eb41e7cb07fd" config-ref="Email_SMTP" subject='#["Account Unlocked !"]'>
+					<email:to-addresses>
+						<email:to-address value="#[vars.fetchAccNo[0].mailId as String]" />
+						<email:to-address value="anelkumar159@gmail.com" />
+					</email:to-addresses>
+					<email:body contentType="text/html">
+						<email:content><![CDATA[#[" <p>This is to inform you that Your Account has been Unlocked </p> "]]]></email:content>
+					</email:body>
+				</email:send>
+				<logger level="INFO" doc:name="Logger" doc:id="2733200a-5334-4f79-bf75-5e8d95043560" message="account un blocked." />
+			</when>
+			<otherwise >
+				<logger level="INFO" doc:name="[out logger]" doc:id="3eb30c43-038d-4ad5-b257-e03364d40c56" message='#["Account Number " ++ vars.saveAccountNo ++ " "  ++ " does not exists."]' />
+				<set-payload value='#["Account Number :" ++ vars.saveAccountNo ++ " "  ++ " does not Exists."]' doc:name="[Out Payload]" doc:id="9db92178-6189-4e13-be4f-0a7ccb502cab" />
+			</otherwise>
+		</choice>
+	</flow>
+</mule>

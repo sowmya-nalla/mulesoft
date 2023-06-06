@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls"
+	xmlns:s3="http://www.mulesoft.org/schema/mule/s3"
+	xmlns:validation="http://www.mulesoft.org/schema/mule/validation"
+	xmlns:cluster="http://www.mulesoft.org/schema/mule/ee/cluster" xmlns:email="http://www.mulesoft.org/schema/mule/email"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd 
+http://www.mulesoft.org/schema/mule/email http://www.mulesoft.org/schema/mule/email/current/mule-email.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	
+	<http:listener-config name="HTTP_Listener" doc:name="HTTP Listener config" doc:id="e56253d2-63df-4977-8c3e-33ca41a74d85" >
+		<http:listener-connection host="0.0.0.0" port="8081" connectionIdleTimeout="300000"/>
+	</http:listener-config>
+	
+	<s3:config name="Amazon_S3_Config" doc:name="Amazon S3 Configuration" doc:id="a96d8434-b7f2-470a-97af-ece1132893d4" >
+		<s3:basic-connection accessKey="${amazon.Accesskey}" secretKey="${amazon.secretkey}" region="AP_SOUTH_1" />
+	</s3:config>
+	
+	<validation:config name="Validation_Config" doc:name="Validation Config" doc:id="606049bb-82ab-4670-b266-04c54834db92" i18n="#[vars.setPayload.atmPin != vars.fetcAcc.atmPin]" />
+	<db:config name="AmazonMySQLRDS_Config" doc:name="Database Config" doc:id="148248e1-a9c0-4162-9df7-714b979510fb" >
+		<db:my-sql-connection host="${db.host}" port="${db.port}" user="${db.user}" password="${db.password}" database="${db.datbase}"/>
+	</db:config>
+	
+	
+	<email:smtp-config name="Email_SMTP" doc:name="Email SMTP" doc:id="6c5f6640-4d92-4d61-9710-1fef3fe8970a" >
+		<email:smtps-connection host="${mail.host}" user="${mail.user}" password="${mail.password}" timeoutUnit="MINUTES">
+			<tls:context >
+				<tls:trust-store insecure="true" />
+			</tls:context>
+		</email:smtps-connection>
+	
+</email:smtp-config>
+	<configuration doc:name="Configuration" doc:id="504a13c9-1dc9-4ad6-a57e-94f0065da724" doc:description="This is the Default DB error Handler." defaultErrorHandler-ref="gbit_Global_Error_Handler" >
+	</configuration>
+	<configuration-properties doc:name="Configuration properties" doc:id="81ecaccc-c118-4404-b8ac-c8c69fae44a7" file="${env}.yaml" />
+	<global-property doc:name="Global Property" doc:id="1b202752-ae84-4ae6-a9e1-64badac9fe36" name="env" value="dev" />
+	
+	
+	
+</mule>

@@ -1,0 +1,80 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
+  <types:catalog>
+    <types:type name="createAccount" format="json">
+      <types:shape format="weave" example="examples/createAccount.json.txt"><![CDATA[%dw 2.0
+
+type createAccount = {|
+  customerName: String, 
+  bank: String, 
+  "type": String, 
+  branchName: String, 
+  accountNum: String, 
+  atmPin: String, 
+  ifscCode: String, 
+  depositAmount: Number {"typeId": "int"}, 
+  mailId: String, 
+  contact: String
+|} {"example": "{\\\"customerName\\\":\\\"Narayana\\\",\\\"bank\\\":\\\"ICICI\\\",\\\"type\\\":\\\"savings\\\",\\\"branchName\\\":\\\"depot1\\\",\\\"accountNum\\\":\\\"1234100001\\\",\\\"atmPin\\\":\\\"1234\\\",\\\"ifscCode\\\":\\\"ICICIB01\\\",\\\"depositAmount\\\":90000000,\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"contact\\\":\\\"8919589256\\\"}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="Attributes" format="json">
+      <types:shape format="weave" example="examples/Attributes.json.txt"><![CDATA[%dw 2.0
+
+type Attributes = {|
+  headers: {|
+    "content-type": String, 
+    "user-agent": String, 
+    accept: String, 
+    "postman-token": String, 
+    host: String, 
+    "accept-encoding": String, 
+    connection: String, 
+    "content-length": String
+  |}, 
+  clientCertificate: String, 
+  method: String, 
+  scheme: String, 
+  queryParams: {|
+    customerName: String, 
+    bank: String, 
+    "type": String, 
+    branchName: String
+  |}, 
+  requestUri: String, 
+  queryString: String, 
+  version: String, 
+  maskedRequestPath: Null, 
+  listenerPath: String, 
+  relativePath: String, 
+  localAddress: String, 
+  uriParams: String, 
+  rawRequestUri: String, 
+  rawRequestPath: String, 
+  remoteAddress: String, 
+  requestPath: String
+|} {"example": "{\\\"headers\\\":{\\\"content-type\\\":\\\"application\\/json\\\",\\\"user-agent\\\":\\\"PostmanRuntime\\/7.26.8\\\",\\\"accept\\\":\\\"*\\/*\\\",\\\"postman-token\\\":\\\"c78b7a81-f16a-49fa-a230-38cb47a30a24\\\",\\\"host\\\":\\\"localhost:8081\\\",\\\"accept-encoding\\\":\\\"gzip, deflate, br\\\",\\\"connection\\\":\\\"keep-alive\\\",\\\"content-length\\\":\\\"166\\\"},\\\"clientCertificate\\\":\\\"null\\\",\\\"method\\\":\\\"POST\\\",\\\"scheme\\\":\\\"http\\\",\\\"queryParams\\\":{\\\"customerName\\\":\\\"EigenYger\\\",\\\"bank\\\":\\\"ICICI\\\",\\\"type\\\":\\\"current\\\",\\\"branchName\\\":\\\"Ontario\\\"},\\\"requestUri\\\":\\\"\\/createaccount?customerName=EigenYger&bank=ICICI&type=current&branchName=Ontario\\\",\\\"queryString\\\":\\\"customerName=EigenYger&bank=ICICI&type=current&branchName=Ontario\\\",\\\"version\\\":\\\"HTTP\\/1.1\\\",\\\"maskedRequestPath\\\":null,\\\"listenerPath\\\":\\\"\\/createaccount\\\",\\\"relativePath\\\":\\\"\\/createaccount\\\",\\\"localAddress\\\":\\\"\\/127.0.0.1:8081\\\",\\\"uriParams\\\":\\\"ee\\\",\\\"rawRequestUri\\\":\\\"\\/createaccount?customerName=EigenYger&bank=ICICI&type=current&branchName=Ontario\\\",\\\"rawRequestPath\\\":\\\"\\/createaccount\\\",\\\"remoteAddress\\\":\\\"\\/127.0.0.1:50325\\\",\\\"requestPath\\\":\\\"\\/createaccount\\\"}"}
+
+]]></types:shape>
+    </types:type>
+    <types:type name="Accounts" format="json">
+      <types:shape format="weave" example="examples/Accounts.json.txt"><![CDATA[%dw 2.0
+
+type Accounts = Array<{|  atmPin: String,   accountType: String,   phoneNumber: String,   ifscCode: String,   wrongPin: Number {"typeId": "int"},   accountStatus: String,   custAccNum: String,   mailId: String,   pk: Number {"typeId": "int"},   bankName: String,   transactionTimeStamp: String,   totalBalance: Number {"typeId": "double"},   custName: String,   branchName: String|}> {"example": "[{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367855\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":3,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2020-12-27T15:05:46.78+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"Rayan\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Blocked\\\",\\\"custAccNum\\\":\\\"1233367856\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":4,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2020-12-27T16:24:18.408+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"Levi\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Executed\\\",\\\"custAccNum\\\":\\\"1233367857\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":5,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2020-12-27T16:35:20.117+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367858\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":6,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2020-12-27T16:49:30.189+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367859\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":7,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2020-12-27T20:17:09.045+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Blocked\\\",\\\"custAccNum\\\":\\\"1233367860\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":8,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2020-12-29T16:44:54.285+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Blocked\\\",\\\"custAccNum\\\":\\\"1233367861\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":9,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:48:34.295+05:30\\\",\\\"totalBalance\\\":80975200.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Blocked\\\",\\\"custAccNum\\\":\\\"1233367862\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":10,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:49:05.003+05:30\\\",\\\"totalBalance\\\":80973600.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":1,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367863\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":11,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:52:54.244+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Blocked\\\",\\\"custAccNum\\\":\\\"1233367864\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":12,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:53:21.745+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Blocked\\\",\\\"custAccNum\\\":\\\"1233367865\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":13,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:54:17.624+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":1,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367866\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":14,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:55:27.255+05:30\\\",\\\"totalBalance\\\":80972000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367867\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":15,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:56:30.274+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367868\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":16,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T18:57:03.783+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367871\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":17,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-04T19:32:52.617+05:30\\\",\\\"totalBalance\\\":80980000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589259\\\",\\\"ifscCode\\\":\\\"ICICIB02\\\",\\\"wrongPin\\\":3,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1233367889\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":18,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-07T19:54:51.375+05:30\\\",\\\"totalBalance\\\":80979000.000000000,\\\"custName\\\":\\\"EigenYger\\\",\\\"branchName\\\":\\\"Ontario\\\"},{\\\"atmPin\\\":\\\"1234\\\",\\\"accountType\\\":\\\"current\\\",\\\"phoneNumber\\\":\\\"8919589256\\\",\\\"ifscCode\\\":\\\"ICICIB01\\\",\\\"wrongPin\\\":0,\\\"accountStatus\\\":\\\"Active\\\",\\\"custAccNum\\\":\\\"1234100007\\\",\\\"mailId\\\":\\\"dokka3@gmail.com\\\",\\\"pk\\\":19,\\\"bankName\\\":\\\"ICICI\\\",\\\"transactionTimeStamp\\\":\\\"2021-01-08T14:00:21.448+05:30\\\",\\\"totalBalance\\\":9000000000.000000000,\\\"custName\\\":\\\"Ichimaru\\\",\\\"branchName\\\":\\\"Ontario\\\"}]"}
+
+]]></types:shape>
+    </types:type>
+  </types:catalog>
+  <types:enrichment select="#f617a6c9-ecc9-4b28-a81d-ff71b08ed70f">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="createAccount"/>
+          <types:attributes type="Attributes"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#03b4c1b3-cee0-455c-8d67-6acaf61073f4"/>
+</types:mule>
