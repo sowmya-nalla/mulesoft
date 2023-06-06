@@ -1,0 +1,23 @@
+#%RAML 1.0
+title: basic-auth
+version: 1.0.0
+ 
+securitySchemes:
+  basic:
+    description: |
+      This API supports Basic Authentication.
+    type: Basic Authentication
+ 
+/booking:
+  get:
+    securedBy: [basic]
+    description: retrieve route list
+    queryParameters:
+      destination:
+        type: string
+        required: false
+    responses:
+      200:
+        body:
+          application/json:
+            
