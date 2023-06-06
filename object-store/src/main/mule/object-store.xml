@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:os="http://www.mulesoft.org/schema/mule/os" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="49abc3e9-c132-4d2a-a8c8-159312bc7852" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<os:object-store name="custom_Object_store" doc:name="Object store" doc:id="2b0df9cc-c2f1-4af5-8eda-777208a69929" maxEntries="100" entryTtl="20" expirationInterval="60" expirationIntervalUnit="SECONDS" />
+	<flow name="object-storeFlow" doc:id="cbc5ae14-4893-445b-ad70-f56bd836e103" >
+		<http:listener doc:name="store" doc:id="9e0cc469-928c-4030-8790-35cf75b2511f" config-ref="HTTP_Listener_config" path="/{path}"/>
+		<logger level="INFO" doc:name="Logger" doc:id="c5e469ac-b36d-40c7-9ffa-06008ab1ffe6" message="#[attributes.uriParams.path]"/>
+		<set-variable value="#[attributes.uriParams.path]" doc:name="Set Variable" doc:id="2aca315b-4519-44b4-8490-3b1d529eea22" variableName="flowName"/>
+		<flow-ref doc:name="Flow Reference" doc:id="9a90bced-61b2-493f-a468-5aa3b7105121" name="#[vars.flowName]"/>
+	</flow>
+	<flow name="os-store" doc:id="c5972942-fc87-40e6-881d-71557cd602f0" >
+		<os:store doc:name="Store" doc:id="745ef588-8b7f-4323-a44a-6ab551f39dab" key="#[payload.id]" failIfPresent="true"/>
+		<logger level="INFO" doc:name="Logger" doc:id="3ce1189e-caf8-4bda-afc8-330f64add8b7" message="#[payload]"/>
+	</flow>
+	<flow name="os-retrive" doc:id="ef68b946-ffc3-4e67-a119-ac184e90f9da" >
+		<os:retrieve doc:name="Retrieve" doc:id="a0338037-bd3a-49a2-8f36-15a4782a0b78" key="#[payload.id]">
+			<os:default-value ><![CDATA[payload]]></os:default-value>
+		</os:retrieve>
+		<logger level="INFO" doc:name="Logger" doc:id="1de331cc-48ad-4488-9c72-cacf8e1b1766" message="#[payload]"/>
+	</flow>
+	<flow name="os-retriveallkeys" doc:id="d17f88fb-44d2-4d1f-bb7b-e09e96931ca3" >
+		<os:retrieve-all-keys doc:name="Retrieve all keys" doc:id="11446f33-bb08-4f10-aa58-3df387daf5cf" />
+		<logger level="INFO" doc:name="Logger" doc:id="1ba923ad-78fd-4aef-95e8-3339910c3c25" message="#[payload]"/>
+	</flow>
+	<flow name="os-retriveall" doc:id="45d76862-37ea-46b9-8dc6-2c707dd6b719" >
+		<os:retrieve-all doc:name="Retrieve all" doc:id="12343572-5d9f-457f-af6b-5e604fe678c8" />
+		<logger level="INFO" doc:name="Logger" doc:id="c73e65f5-de61-44f6-86e7-a6263a16f87d" message="#[payload]"/>
+	</flow>
+	<flow name="os-remove" doc:id="2c9c7423-4411-472a-beb3-5064c1a5da69" >
+		<os:remove doc:name="Remove" doc:id="ee06dd3a-f570-4129-888f-f565e84b0ec3" key="#[payload.id]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="fdfe6b03-42d4-4096-911c-1b7e47b82954" message="#[payload]"/>
+	</flow>
+	<flow name="os-contains" doc:id="e583eae4-3d08-4b5b-938b-b7815f51d722" >
+		<os:contains doc:name="Contains" doc:id="9ff302bb-249b-44b4-8cf0-a423806fc753" key="#[payload.id]"/>
+		<logger level="INFO" doc:name="Logger" doc:id="11999e99-61ad-4770-9d90-20f9e0b320d3" message="#[payload]"/>
+	</flow>
+	<flow name="custom-object-storeFlow" doc:id="bcbcf97f-a6fa-4a43-b490-78db770533ec" >
+		<os:store doc:name="Store" doc:id="442942a7-6493-4303-a79b-43b7b565ed71" key="#[payload.id]" objectStore="custom_Object_store"/>
+		<logger level="INFO" doc:name="Logger" doc:id="989f39cd-7088-4e6b-93cb-32ec5ab2b8a6" message="#[payload]"/>
+	</flow>
+	<flow name="custom-object-retriveall-flow" doc:id="0ef4eab4-bce9-485d-85a9-1f6179e5bb40" >
+		<os:retrieve-all doc:name="Retrieve all" doc:id="9c832c86-9cda-4cc8-80ad-e993c7d73fd1" objectStore="custom_Object_store"/>
+		<logger level="INFO" doc:name="Logger" doc:id="0132d14d-17ce-45b4-ad1a-5938c01ca778" />
+	</flow>
+	<flow name="os-clear" doc:id="2a13ad6c-b78c-492f-99da-0acf67318d38" >
+		<os:clear doc:name="Clear" doc:id="f9d64411-b6df-4152-b89b-fdf3896cd1f5" />
+		<logger level="INFO" doc:name="Logger" doc:id="8352cb3a-a840-4d93-b24e-5097585f27dd" message="#[payload]"/>
+	</flow>
+</mule>
