@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd">
+	<ftp:config name="FTP_Config" doc:name="FTP Config" doc:id="65a7d3e6-e1de-4530-bc9a-27c421b87039" >
+		<ftp:connection workingDir="C:\Users\2281671\AnypointStudio\studio-workspace\connectors-poc" host="localhost" username="sowmya.nalla01@gmail.com" password="ChinniFTP@06" />
+	</ftp:config>
+	<flow name="FTP-pocFlow" doc:id="b9c9d85a-6fec-4368-a53c-aa7ce8fe37ca" >
+		<http:listener doc:name="Listener" doc:id="90564515-ff6d-4db0-8597-75cc9cbfdf60" config-ref="HTTP_Listener_config" path="/readFile"/>
+		<logger level="INFO" doc:name="Logger" doc:id="58edeb2f-256c-4c5f-a363-0d0823053e24" message='"Started reading the file"'/>
+		<ftp:read doc:name="Read" doc:id="765dd43b-a0ca-49ac-b6ad-247da65bfb22" config-ref="FTP_Config" path="/src/main/resources/input"/>
+	</flow>
+</mule>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:ftp="http://www.mulesoft.org/schema/mule/ftp"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:s3="http://www.mulesoft.org/schema/mule/s3" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ftp http://www.mulesoft.org/schema/mule/ftp/current/mule-ftp.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<s3:config name="Amazon_S3_Configuration1" doc:name="Amazon S3 Configuration" doc:id="d0809a9e-423b-4f31-af28-543edcd78122" >
+		<s3:connection accessKey="${aws.Accesskey}" secretKey="${aws.secretkey}" />
+	</s3:config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="da456668-174c-43b0-8e83-7e75087847e4" >
+		<file:connection workingDir="C:\Users\2281671\AnypointStudio\studio-workspace\connectors-poc" />
+	</file:config>
+	<flow name="amazon-s3-connectorFlow" doc:id="d17f6e1b-5795-4a70-8205-bfe76e9e4a99" >
+		<http:listener doc:name="Listener" doc:id="3e440da3-06f2-4f89-8559-b4f3fbcc47fa" config-ref="HTTP_Listener_config" path="/createBucket"/>
+		<s3:create-bucket doc:name="Create Bucket" doc:id="510889ac-ee58-41eb-8e21-5a9001a66232" config-ref="Amazon_S3_Configuration1" bucketName="sample-storage-server" acl="PRIVATE"/>
+		<logger level="INFO" doc:name="Logger" doc:id="758ff40a-d162-473a-b3d1-bf03b3ec4619" message='"created successfully"'/>
+	</flow>
+	<flow name="amazon-s3-connectorFlow1" doc:id="533dd056-6970-4267-ad06-366ceed2e5cd" >
+		<file:listener doc:name="On New or Updated File" doc:id="46bb38a3-2c4d-4fe8-8cb4-195b91919bfc" config-ref="File_Config" directory="src/main/resources/input" recursive="false" autoDelete="true">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<logger level="INFO" doc:name="Input Logger" doc:id="78ac87b7-8caf-40ca-b666-3ee11d1a083d" message='"File is listened"'/>
+		<set-variable value="" doc:name="File Size" doc:id="588678b4-e12a-4db1-a66c-521a936b0d62" variableName="fileSize"/>
+		<set-variable value="" doc:name="File Name" doc:id="c69e7756-4d14-4dae-81ec-f49daa632d4d" variableName="fileName"/>
+		<s3:put-object doc:name="Put Object" doc:id="eac62157-0940-4fb9-b2f8-c4b7c0c82a8b" config-ref="Amazon_S3_Configuration1" bucketName="sample-storage-server" key="test"/>
+		<logger level="INFO" doc:name="Output Logger" doc:id="547fdebd-feba-460a-aa8e-13e56ea1ad22" message='"File is uploaded successfully"'/>
+	</flow>
+	<flow name="amazon-s3-connectorFlow2" doc:id="bb3db33d-c3cc-4363-b956-190c2dd4a0ca" >
+		<http:listener doc:name="Listener" doc:id="b1840797-0321-492b-9712-74742365d7d9" config-ref="HTTP_Listener_config" path="/deleteObject"/>
+		<s3:delete-object doc:name="Delete Object" doc:id="649b4339-13e3-47bc-8138-a85ff1645e6f" config-ref="Amazon_S3_Configuration1" bucketName="sample-storage-server" key="Account.csv"/>
+	</flow>
+	<flow name="amazon-s3-connectorFlow3" doc:id="204aa463-5d6c-4b55-8d6c-e6ef061d15fa" >
+		<http:listener doc:name="Listener" doc:id="bcc8b3d8-6fb2-4395-b4f8-92650d0f3b4d" config-ref="HTTP_Listener_config" path="/getObject"/>
+		<logger level="INFO" doc:name="Input Logger" doc:id="432cf4a9-b1d3-4f2b-b149-bde053eabcc1" message='"Input logger "' />
+		<set-variable value="" doc:name="File Name" doc:id="a54911b2-e515-4662-83ce-12d89583350e" variableName="fileName" />
+		<s3:get-object doc:name="Get Object" doc:id="7c9e5388-96d4-47f6-a398-c95561ddbc33" config-ref="Amazon_S3_Configuration1" bucketName="sample-storage-server" key="test"/>
+		<logger level="INFO" doc:name="Output Logger" doc:id="a43977af-35c2-4e65-a2a3-36fc87fbcca0" message='"File is downloaded successfully"' />
+	</flow>
+</mule>

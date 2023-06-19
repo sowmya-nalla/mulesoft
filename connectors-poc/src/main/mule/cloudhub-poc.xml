@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:servicenow="http://www.mulesoft.org/schema/mule/servicenow" xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway"
+	xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd
+http://www.mulesoft.org/schema/mule/servicenow http://www.mulesoft.org/schema/mule/servicenow/current/mule-servicenow.xsd">
+	<cloudhub:config name="CloudHub_Config" doc:name="CloudHub Config" doc:id="a1842058-8efa-4c3a-b9ad-5a14218b5f5a" >
+		<cloudhub:connection username="sowmya_nalla02" password="Chinni@06"/>
+	</cloudhub:config>
+	<flow name="cloudhub-pocFlow1" doc:id="8ea2325d-4a00-4824-bdba-292f0449773e" >
+		<http:listener doc:name="Listener" doc:id="10cffaf2-c391-42b8-9a5a-0648331e3573" config-ref="HTTP_Listener_config" path="/cloudhub"/>
+		<cloudhub:create-notification domain="cloudhub-poc" doc:name="Create Notification" doc:id="94c9c55f-7cb1-470b-89c9-33aebd30028d" config-ref="CloudHub_Config" priority="ERROR">
+			<cloudhub:message ><![CDATA[#["Error occured in the application"]]]></cloudhub:message>
+		</cloudhub:create-notification>
+		<logger level="INFO" doc:name="Logger" doc:id="334aa1d5-8e53-4192-a6ae-3ff4d841fae6" message="#[payload]"/>
+	</flow>
+</mule>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:os="http://www.mulesoft.org/schema/mule/os"
+	xmlns:slack="http://www.mulesoft.org/schema/mule/slack"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:s3="http://www.mulesoft.org/schema/mule/s3" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/s3 http://www.mulesoft.org/schema/mule/s3/current/mule-s3.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/slack http://www.mulesoft.org/schema/mule/slack/current/mule-slack.xsd
+http://www.mulesoft.org/schema/mule/os http://www.mulesoft.org/schema/mule/os/current/mule-os.xsd
+http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+	<s3:config name="Amazon_S3_Configuration" doc:name="Amazon S3 Configuration" doc:id="7380497e-5c03-4511-8da6-54459bf7c892" >
+		<s3:connection accessKey="${aws.Accesskey}" secretKey="${aws.secretkey}" />
+	</s3:config>
+	<global-property doc:name="Global Property" doc:id="3432a644-92e0-4590-9703-2f08e884beb2" name="env" value="dev" />
+	<configuration-properties doc:name="Configuration properties" doc:id="646e2340-81b7-4654-9241-b383d9010ec4" file="${env}.properties" />
+	<slack:config name="Slack_Connector_Config" doc:name="Slack Connector Config" doc:id="7a30a7f6-5134-487d-83ed-584e6a73b917" >
+		<slack:slack-auth-connection >
+			<slack:oauth-authorization-code consumerKey="5392107705862.5429664642708" consumerSecret="e1cf26109d6875f0247e5fe339ea8464" scopes="channels:read chat:write:bot"/>
+			<slack:oauth-callback-config listenerConfig="HTTPS_Listener_config" callbackPath="/callback" authorizePath="/authorize" externalCallbackUrl="https://localhost:8082/callback" />
+			<slack:oauth-store-config objectStore="Object_store1" />
+		</slack:slack-auth-connection>
+	</slack:config>
+	<os:object-store name="Object_store1" doc:name="Object store" doc:id="8dc3eace-9f12-4c5b-9926-4d7ce5570151" maxEntries="100" entryTtl="365" entryTtlUnit="DAYS" />
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ac47ee24-fa86-4846-a3e7-4d9327ff0849" >
+		<http:listener-connection host="0.0.0.0" port="8081" >
+		</http:listener-connection>
+	</http:listener-config>
+	<http:listener-config name="HTTPS_Listener_config" doc:name="HTTP Listener config" doc:id="e9ab23e9-337e-4235-a642-e77a50820341" >
+		<http:listener-connection protocol="HTTPS" host="0.0.0.0" port="8082" >
+			<tls:context >
+				<tls:key-store type="jks" path="keystore.jks" keyPassword="pass1234" password="pass1234" />
+			</tls:context>
+		</http:listener-connection>
+	</http:listener-config>
+	<flow name="connectors-pocFlow1" doc:id="8cfdf93a-8cfb-4088-85ec-3c9f8ef217b3" >
+		<http:listener doc:name="Listener" doc:id="a62cb01d-1b14-44d0-b1b8-9d01c7f78861" config-ref="HTTPS_Listener_config" path="/send-message"/>
+		<ee:transform doc:name="Transform Message" doc:id="941c49fb-7cde-454c-b9e0-9e0e3a25772d" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+   channel:"demo-composer",
+   text:"connected through slack,uploading a file"
+   
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<slack:create-chatpost-message doc:name="Send Message" doc:id="b5a8533c-084a-4e15-b470-d0c7aaf188c7" config-ref="Slack_Connector_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="9e4efffa-271c-4606-9ece-420a24d32ae9" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="37d9a68e-8f5c-4d6c-9900-7a96a2ac75bf" message="#[payload]"/>
+	</flow>
+</mule>

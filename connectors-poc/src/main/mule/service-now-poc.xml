@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns:servicenow="http://www.mulesoft.org/schema/mule/servicenow"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/servicenow http://www.mulesoft.org/schema/mule/servicenow/current/mule-servicenow.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<servicenow:config name="ServiceNow_Config" doc:name="ServiceNow Config" doc:id="0c048b25-44c6-4e78-b897-1bb86e208870" >
+		<servicenow:basic-connection username="admin" password="o^e91BRt/PdQ" serviceAddress="https://dev126235.service-now.com/" />
+	</servicenow:config>
+	<flow name="service-now-pocFlow" doc:id="64062881-8d3e-4983-95f2-ad7fff5e4fd8" >
+		<http:listener doc:name="/createIncident" doc:id="a267a7eb-dece-472f-9dc0-a8050802f00f" config-ref="HTTP_Listener_config" path="/createIncident"/>
+		<ee:transform doc:name="Transform Message" doc:id="3e090a6d-1503-4e31-8563-0825bbcb6d8b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+ns ns0 http://www.service-now.com/incident
+---
+{
+	ns0#insert: {
+		
+		comments: "This is high priority issue.",
+		short_description: "cannot access the softwares",
+		
+	}
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<servicenow:invoke service="incident" operation="insert" doc:name="Invoke" doc:id="be622bff-a535-4512-95ca-a4161c12cfc2" config-ref="ServiceNow_Config" showReferenceValues="TRUE"/>
+		<ee:transform doc:name="Transform Message" doc:id="99c4c4c0-219b-4e2e-b821-32cb0d99de5c" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="payload" doc:id="e17dfbc3-0d36-45db-b2db-b07c2beed5bb" message="#[payload]"/>
+	</flow>
+</mule>
