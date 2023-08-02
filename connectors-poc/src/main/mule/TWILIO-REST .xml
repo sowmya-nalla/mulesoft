@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:jms="http://www.mulesoft.org/schema/mule/jms" xmlns:twilio="http://www.mulesoft.org/schema/mule/twilio"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/twilio http://www.mulesoft.org/schema/mule/twilio/current/mule-twilio.xsd
+http://www.mulesoft.org/schema/mule/jms http://www.mulesoft.org/schema/mule/jms/current/mule-jms.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="6615bd89-e8bc-480b-82ca-824d45a42c78" >
+		<http:request-connection host="localhost" port="8081" >
+			<http:authentication >
+				<http:basic-authentication username="ACc16e02753bd2c0a96d2cd52472f1fdcd" password="c2211a8ab4723636c6a74457bd6e0df2" />
+			</http:authentication>
+		</http:request-connection>
+	</http:request-config>
+	<twilio:config name="Twilio_Connector_Config" doc:name="Twilio Connector Config" doc:id="2b98eb7b-bfce-471c-a22a-cd90c6153f7f" >
+		<twilio:account-sid-auth-token-connection username="ACc16e02753bd2c0a96d2cd52472f1fdcd" password="c2211a8ab4723636c6a74457bd6e0df2"/>
+	</twilio:config>
+	<flow name="TWILIO-REST_Flow" doc:id="f88c39ce-b642-411f-92fa-c467d703cf60" >
+		<http:listener doc:name="Listener" doc:id="1741b7e5-4f6e-4f8b-a3eb-34298ee4f2a8" path="/call" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="start-message" doc:id="4bd2c29a-f8ec-4b60-8dd8-66d109d1cf31" message="start of flow"/>
+		<ee:transform doc:name="MULE:EXPRESSION" doc:id="5a67f4f4-d3d0-4f69-9b9a-a19638c62419" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+1/0]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End-message" doc:id="e0271ce4-7564-43d4-865d-b01ae9f21962" message="End of flow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c98242c8-ca41-4b4d-bc4c-7e51810ce18f" type="ANY">
+				<logger level="INFO" doc:name="Error-Message" doc:id="10764abb-7afa-4089-9c8e-62fbd5c93cb6" message="#[payload]"/>
+				<ee:transform doc:name="Set Error Response" doc:id="c3ad841f-2122-477b-b6df-2236ca02ecd1" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value='#[output application/x-www-form-urlencoded&#10;---&#10;{&#10;"To": "+12487599718"	,&#10;"From": "+18336870734",&#10;"Twiml" :"&lt;Response&gt;&#10;           &lt;Say&gt;There has been a $(error.errorType.asString) Error in $(app.name)&#10;&lt;/Say&gt;&#10;&lt;/Response&gt;&#10;"&#10;&#10;}]' doc:name="callNotification" doc:id="3a0d96aa-f5c3-4f82-b32f-61127c5c130c" variableName="callNotification"/>
+				<http:request method="POST" doc:name="Twilio-rest-call" doc:id="94b945a2-ac44-4ab2-92ad-b4fa1633bb76" config-ref="HTTP_Request_configuration" url="https://api.twilio.com/2010-04-01/Accounts/ACc16e02753bd2c0a96d2cd52472f1fdcd/Calls.json">
+					<http:body ><![CDATA[#[vars.callNotification]]]></http:body>
+				</http:request>
+			</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="TWILIO-REST-Flow-For_message" doc:id="dc938775-b2bc-436e-b800-1bb3b69e2ed0" >
+		<http:listener doc:name="Listener" doc:id="6734c3a7-201d-4742-b5f2-71c5cfa62fd0" path="/message" config-ref="HTTP_Listener_config"/>
+		<logger level="INFO" doc:name="start-message" doc:id="4dd60f33-e612-4b8c-ae7d-fd01532e073c" message="start of flow"/>
+		<ee:transform doc:name="MULE:EXPRESSION" doc:id="fcf1bd55-b85b-456f-a7b8-462c6287906a" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+1/0]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="End-message" doc:id="69db81ee-4da3-493f-95e2-756b7daa49a6" message="End of flow"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b60eb1c9-4d2b-4793-904e-feb285a66336" type="ANY">
+				<logger level="INFO" doc:name="Error-Message" doc:id="be168528-a7bd-461a-9fe1-3fa948b27d71" message="#[payload]"/>
+				<ee:transform doc:name="Set Error Response" doc:id="135375b2-2c43-4d8e-a4bd-f4f9c573d2c4" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+				<set-variable value='#[output application/x-www-form-urlencoded&#10;---&#10;&#10;{&#10;"To":"+12487599718"	,&#10;"From":"+18336870734",&#10;"Body" :" There has been a $(error.errorType.asString) Error in $(app.name) and criticality of Error is : P1 (P1 High, P2 Medium, P3 Low)"&#10;&#10;}]' doc:name="callNotification" doc:id="f20a1606-a1d5-453e-88c1-ee2eeaff7933" variableName="callNotification"/>
+<!-- [STUDIO:"Twilio-rest-message"]				<http:request method="POST" doc:name="Twilio-rest-message" doc:id="5949cc85-dbdc-4ccd-a13c-a5b262af11a7" config-ref="HTTP_Request_configuration" url="https://api.twilio.com/2010-04-01/Accounts/ACc16e02753bd2c0a96d2cd52472f1fdcd/Messages/SM1f9898dabcb897b1885bb6f2ac4d535f.json">
+				</http:request> [STUDIO] -->
+				<twilio:create20100401-accounts-messagesjson-by-account-sid doc:name="Create Message" doc:id="7402eaae-a223-4c55-baa5-88fcd2cfa560" config-ref="Twilio_Connector_Config" accountSid="ACc16e02753bd2c0a96d2cd52472f1fdcd" >
+					<twilio:accounts-messages-content ><![CDATA[#[vars.callNotification]]]></twilio:accounts-messages-content>
+				</twilio:create20100401-accounts-messagesjson-by-account-sid>
+			
+</on-error-propagate>
+		</error-handler>
+	</flow>
+	<flow name="TWILIO-REST_Flow1" doc:id="28b1930c-b1b0-4954-93b0-ea2543aa805a" >
+		<http:listener doc:name="Message-Listerner" doc:id="98b8d94c-d665-4452-a0ec-81b109748e8e" config-ref="HTTP_Listener_config" path="/sendMessage"/>
+		<ee:transform doc:name="Transform Message" doc:id="af228f56-d661-42eb-8433-7b288747e89d" >
+			<ee:message >
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="textMessage" ><![CDATA[%dw 2.0
+output application/x-www-form-urlencoded
+---
+{
+	"Body":"welcome to messaging service",
+	"From": "+18336870734",
+	"To": "+12487599718"
+}]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<twilio:create20100401-accounts-messagesjson-by-account-sid doc:name="Create Message" doc:id="dd77974b-b6c5-4020-956c-ffb635559192" config-ref="Twilio_Connector_Config" accountSid="ACc16e02753bd2c0a96d2cd52472f1fdcd">
+			<twilio:accounts-messages-content ><![CDATA[#[vars.textMessage]]]></twilio:accounts-messages-content>
+		</twilio:create20100401-accounts-messagesjson-by-account-sid>
+		<ee:transform doc:name="Transform Message" doc:id="16b6e256-74cb-4e99-a7cd-c4a06a4256ea" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+	</flow>
+</mule>
